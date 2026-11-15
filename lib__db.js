@@ -1,10 +1,12 @@
-import { createPool } from '@vercel/postgres';
-const e = process.env;
-const vals = Object.values(e).filter(
+import { neon } from '@neondatabase/serverless';
+const vals = Object.values(process.env).filter(
   (v) => typeof v === 'string' && v.startsWith('postgres')
 );
 const url =
-  e.POSTGRES_URL ||
+  process.env.POSTGRES_URL ||
   vals.find((v) => v.includes('-pooler')) ||
   vals[0];
-export const sql = createPool({ connectionString: url }).sql;
+export async function sql(strings, ...values) {
+  const rows = await neon(url)(strings, ...values);
+  return { rows };
+}
