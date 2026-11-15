@@ -1,9 +1,10 @@
 import { createPool } from '@vercel/postgres';
+const e = process.env;
+const vals = Object.values(e).filter(
+  (v) => typeof v === 'string' && v.startsWith('postgres')
+);
 const url =
-  process.env.POSTGRES_URL ||
-  process.env.DATABASE_URL ||
-  process.env.STORAGE_POSTGRES_URL ||
-  process.env.STORAGE_DATABASE_URL ||
-  process.env.STORAGE_URL;
-const pool = createPool({ connectionString: url });
-export const sql = pool.sql;
+  e.POSTGRES_URL ||
+  vals.find((v) => v.includes('-pooler')) ||
+  vals[0];
+export const sql = createPool({ connectionString: url }).sql;
