@@ -1,0 +1,25 @@
+import { sql } from '@/lib/db';
+export async function GET() {
+  await sql`create table if not exists users(id serial primary key, username text unique not null, password_hash text not null, ap int not null default 0, created_at timestamptz default now())`;
+  await sql`create table if not exists badges(user_id int references users(id), badge text, primary key(user_id, badge))`;
+  await sql`create table if not exists quizzes(id serial primary key, kind text, title text, question text, options jsonb, answer int, ap int, seconds int, badge text)`;
+  await sql`create table if not exists quiz_attempts(user_id int, quiz_id int, primary key(user_id, quiz_id))`;
+  await sql`create table if not exists matchups(id serial primary key, round int, slot int, a text, b text, votes_a int default 0, votes_b int default 0)`;
+  await sql`create table if not exists matchup_votes(user_id int, matchup_id int, primary key(user_id, matchup_id))`;
+  await sql`create table if not exists debates(id serial primary key, topic text, side_a text, side_b text, votes_a int default 0, votes_b int default 0)`;
+  await sql`create table if not exists debate_votes(user_id int, debate_id int, primary key(user_id, debate_id))`;
+  await sql`create table if not exists debate_posts(id serial primary key, debate_id int, user_id int, side text, body text, created_at timestamptz default now())`;
+  if (!(await sql`select 1 from quizzes limit 1`).rows.length) {
+    const Q = [
+      ['pop', 'Pop Quiz', 'Who is the Straw Hat Pirates\' captain?', ['Zoro', 'Luffy', 'Usopp', 'Sanji'], 1, 15, 15, null],
+      ['pop', 'Pop Quiz', 'Which studio animated Spirited Away?', ['Ghibli', 'MAPPA', 'Bones', 'Trigger'], 0, 15, 15, null],
+      ['pop', 'Pop Quiz', 'What is Edward Elric\'s alchemy forbidden act?', ['Time travel', 'Human transmutation', 'Gold making', 'Soul swap'], 1, 20, 15, 'Alchemist'],
+      ['weekly', 'Weekly Contest', 'Which anime features the Survey Corps?', ['Bleach', 'Attack on Titan', 'Fairy Tail', 'Black Clover'], 1, 30, 100, 'Weekly Champion'],
+    ];
+    for (const q of Q) await sql`insert into quizzes(kind,title,question,options,answer,seconds,ap,badge) values (${q[0]},${q[1]},${q[2]},${JSON.stringify(q[3])}::jsonb,${q[4]},${q[5]},${q[6]},${q[7]})`;
+    const A = ['Naruto', 'One Piece', 'Death Note', 'Fullmetal Alchemist: Brotherhood', 'Attack on Titan', 'Cowboy Bebop', 'Dragon Ball Z', 'Hunter x Hunter'];
+    for (let i = 0; i < 4; i++) await sql`insert into matchups(round,slot,a,b) values (1,${i},${A[i * 2]},${A[i * 2 + 1]})`;
+    await sql`insert into debates(topic,side_a,side_b) values ('Greatest rival ever?','Naruto vs Sasuke','Light vs L'), ('Best protagonist?','Goku','Luffy')`;
+  }
+  return Response.json({ ok: true });
+}

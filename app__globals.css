@@ -1,0 +1,6 @@
+:root{--bg:#0f0f1a;--card:#1b1b2f;--ink:#eee;--mute:#9a9ab5;--pink:#ff4d8d;--blue:#4dc3ff}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,sans-serif}
+a{color:var(--blue);text-decoration:none}
+h1,h2,h3{margin:.4em 0}
+input,button,textarea{font:inherit}
