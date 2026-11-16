@@ -5,6 +5,7 @@ import s from './ui.module.css';
 import Nav from './Nav';
 import SW from './SW';
 import CharPicker from './CharPicker';
+import { charImages } from '@/lib/charimg';
 import { getUser } from '@/lib/auth';
 import { isAdmin } from '@/lib/game';
 import { sql } from '@/lib/db';
@@ -18,10 +19,11 @@ export default async function RootLayout({ children }) {
   const me = await getUser();
   const show = !!me && !me.character && !!(await cookies()).get('pickchar');
   const counts = show ? (await sql`select character, count(*)::int as n from users where character is not null group by character`).rows : [];
+  const imgs = show ? await charImages() : {};
   return (
     <html lang="en" className={`${head.variable} ${mono.variable}`}><body>
       <SW />
-      {show && <CharPicker ap={me.ap} counts={counts} choose={chooseCharacter} skip={skipPicker} />}
+      {show && <CharPicker ap={me.ap} counts={counts} imgs={imgs} choose={chooseCharacter} skip={skipPicker} />}
       <Nav me={me ? { username: me.username, ap: me.ap } : null} logout={logout} admin={isAdmin(me)} />
       <main className={s.main}>{children}</main>
       <footer className={s.footer}>

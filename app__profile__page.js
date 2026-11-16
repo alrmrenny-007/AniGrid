@@ -5,6 +5,7 @@ import { sql } from '@/lib/db';
 import { getUser } from '@/lib/auth';
 import { rankOf, nextTier } from '@/lib/game';
 import { charById, perkText, TASKS } from '@/lib/chars';
+import { charImages } from '@/lib/charimg';
 import { claimDaily, generateRecovery, getPushKey, savePush } from '../actions';
 import CodeForm from '../CodeForm';
 import PushButton from '../PushButton';
@@ -16,11 +17,12 @@ export default async function Profile({ searchParams }) {
   const { rows: [u] } = await sql`select case when last_login >= current_date - 1 then streak else 0 end as streak, coalesce(last_login = current_date, false) as claimed from users where id = ${me.id}`;
   const c = me.character ? charById(me.character) : null;
   const nt = nextTier(me.ap);
+  const imgs = c ? await charImages() : {};
   return (<>
     {sp.new && <p className={s.badge}>Welcome! Generate a recovery code below and save it. It is the only way to reset a forgotten password.</p>}
     {sp.reset && <p className={s.badge}>Password reset. Generate a new recovery code below.</p>}
     <div className={s.pHero}>
-      <div className={s.avatar}>{c ? c.emoji : '👤'}</div>
+      <div className={s.avatar}>{c && imgs[c.id] ? <img src={imgs[c.id]} alt={c.name} className={s.avImg} /> : c ? c.emoji : '👤'}</div>
       <div>
         <h1 style={{ margin: '0 0 .4rem' }}>{me.username}</h1>
         <span className={s.rankPill}>{rankOf(me.ap)}</span>

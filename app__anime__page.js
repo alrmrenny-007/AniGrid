@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import s from '../ui.module.css';
 import { sql } from '@/lib/db';
+import { gql, norm, F } from '@/lib/anilist';
 import { getUser } from '@/lib/auth';
 import { isAdmin } from '@/lib/game';
 import { setWatch, postComment, deleteComment, reportComment } from '../actions';
@@ -12,7 +13,8 @@ export default async function Anime({ searchParams }) {
   const n = parseInt(id);
   if (!n) redirect('/');
   let a = null;
-  try { a = (await (await fetch(`https://api.jikan.moe/v4/anime/${n}`, { next: { revalidate: 3600 } })).json()).data; } catch {}
+  const d = await gql(`query($id:Int){Media(idMal:$id,type:ANIME){${F}}}`, { id: n }, 3600);
+  if (d?.Media) { const x = norm(d.Media); a = { title: x.title, images: { jpg: { large_image_url: x.img, image_url: x.thumb } }, score: x.score, episodes: x.eps, status: x.live ? 'Airing' : 'Finished', year: x.year, genres: (d.Media.genres || []).map((g) => ({ mal_id: g, name: g })), synopsis: x.syn }; }
   if (!a) return <p className={s.mute}>Couldn't load this anime right now. Try again in a moment.</p>;
   const me = await getUser();
   const mine = me ? (await sql`select status, rating from watchlist where user_id = ${me.id} and anime_id = ${n}`).rows[0] : null;

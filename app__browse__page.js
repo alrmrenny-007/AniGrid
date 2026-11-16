@@ -1,18 +1,16 @@
 import Link from 'next/link';
 import s from '../ui.module.css';
+import { gql, norm, F } from '@/lib/anilist';
 export const dynamic = 'force-dynamic';
-const GEN = [['Action', 1], ['Adventure', 2], ['Comedy', 4], ['Drama', 8], ['Fantasy', 10], ['Horror', 14], ['Mystery', 7], ['Romance', 22], ['Sci-Fi', 24], ['Slice of Life', 36], ['Sports', 30], ['Supernatural', 37]];
+const GEN = ['Action', 'Adventure', 'Comedy', 'Drama', 'Fantasy', 'Horror', 'Mystery', 'Romance', 'Sci-Fi', 'Slice of Life', 'Sports', 'Supernatural'];
+const Q = `query($q:String,$g:String,$sort:[MediaSort]){Page(perPage:30){media(type:ANIME,search:$q,genre:$g,sort:$sort,isAdult:false){${F}}}}`;
 export default async function Browse({ searchParams }) {
   const sp = await searchParams;
   const q = String(sp.q || '').slice(0, 60);
-  const genre = /^\d+$/.test(String(sp.genre || '')) ? String(sp.genre) : '';
-  const qs = new URLSearchParams({ order_by: 'score', sort: 'desc', sfw: 'true', limit: '24' });
-  if (q) qs.set('q', q); else qs.set('min_score', '6');
-  if (genre) qs.set('genres', genre);
-  let list = [];
-  try { list = (await (await fetch('https://api.jikan.moe/v4/anime?' + qs, { next: { revalidate: 600 } })).json()).data || []; } catch {}
+  const genre = GEN.includes(String(sp.genre || '')) ? String(sp.genre) : '';
+  const d = await gql(Q, { q: q || undefined, g: genre || undefined, sort: [q ? 'SEARCH_MATCH' : 'POPULARITY_DESC'] }, 600);
   const seen = new Set();
-  list = list.filter((a) => !seen.has(a.mal_id) && seen.add(a.mal_id));
+  const list = (d?.Page?.media || []).filter((m) => m.idMal && !seen.has(m.idMal) && seen.add(m.idMal)).map(norm);
   return (<>
     <h1>Catalog</h1>
     <form action="/browse">
@@ -22,12 +20,12 @@ export default async function Browse({ searchParams }) {
     </form>
     <div className={s.chips}>
       <Link href="/browse" className={`${s.gchip} ${!genre ? s.gchipOn : ''}`}>All</Link>
-      {GEN.map(([n, id]) => <Link key={id} href={`/browse?genre=${id}`} className={`${s.gchip} ${genre === String(id) ? s.gchipOn : ''}`}>{n}</Link>)}
+      {GEN.map((n) => <Link key={n} href={`/browse?genre=${encodeURIComponent(n)}`} className={`${s.gchip} ${genre === n ? s.gchipOn : ''}`}>{n}</Link>)}
     </div>
-    {list.length === 0 && <p className={s.mute}>No results right now. Try another search.</p>}
+    {list.length === 0 && <p className={s.mute}>{d ? 'No results. Try another search.' : 'The anime feed is taking a nap. Refresh in a moment.'}</p>}
     <div className={s.grid}>{list.map((a) => (
-      <div key={a.mal_id} className={s.card}>
-        <Link href={`/anime?id=${a.mal_id}`} style={{ color: 'inherit', display: 'block' }}><img src={a.images?.jpg?.image_url} alt={a.title} loading="lazy" decoding="async" /><b>{a.title}</b></Link>
+      <div key={a.id} className={s.card}>
+        <Link href={`/anime?id=${a.id}`} style={{ color: 'inherit', display: 'block' }}><img src={a.thumb} alt={a.title} loading="lazy" decoding="async" /><b>{a.title}</b></Link>
         <div className={s.mute}>★ {a.score ?? 'N/A'}</div>
       </div>))}
     </div>
