@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import s from './ui.module.css';
 import Carousel from './Carousel';
 import { sql } from '@/lib/db';
@@ -30,7 +31,7 @@ export default async function Home() {
     <h2>Airing This Season</h2>
     {season.length === 0 && <p className={s.mute}>Seasonal feed unavailable right now.</p>}
     <div className={s.grid}>{season.map((a) => (
-      <div key={a.id} className={s.card}><img src={a.img} alt={a.title} /><b>{a.title}</b><div className={s.mute}>★ {a.score ?? 'N/A'}</div></div>
+      <div key={a.id} className={s.card}><Link href={`/anime?id=${a.id}`} style={{ color: 'inherit', display: 'block' }}><img src={a.img} alt={a.title} /><b>{a.title}</b></Link><div className={s.mute}>★ {a.score ?? 'N/A'}</div></div>
     ))}</div>
   </>);
 }

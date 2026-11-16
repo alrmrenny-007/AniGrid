@@ -7,6 +7,8 @@ export async function GET(req) {
   await sql`alter table users add column if not exists last_login date`;
   await sql`create table if not exists quiz_starts(user_id int, quiz_id int, started_at timestamptz default now(), primary key(user_id, quiz_id))`;
   await sql`create table if not exists news(id serial primary key, tag text, title text, body text, created_at timestamptz default now())`;
+  await sql`create table if not exists watchlist(user_id int, anime_id int, title text, img text, status text, rating int, primary key(user_id, anime_id))`;
+  await sql`create table if not exists watch_rewards(user_id int, anime_id int, primary key(user_id, anime_id))`;
   await sql`create table if not exists badges(user_id int references users(id), badge text, primary key(user_id, badge))`;
   await sql`create table if not exists quizzes(id serial primary key, kind text, title text, question text, options jsonb, answer int, ap int, seconds int, badge text)`;
   await sql`create table if not exists quiz_attempts(user_id int, quiz_id int, primary key(user_id, quiz_id))`;

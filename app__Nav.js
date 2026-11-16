@@ -16,6 +16,7 @@ export default function Nav({ me, logout, admin }) {
         <button className={s.burger} onClick={() => setOpen(!open)} aria-label="Menu"><i /><i /><i /></button>
         <div className={s.links}>
           {L.map(([h, t]) => <Link key={h} href={h} className={cls(h)}>{t}</Link>)}
+          {me && <Link href="/watchlist" className={cls('/watchlist')}>My List</Link>}
           {admin && <Link href="/admin" className={cls('/admin')}>Admin</Link>}
           {me ? (<>
             <Link href="/profile" className={`${cls('/profile')} ${s.pill}`}>{me.username} · {me.ap} AP</Link>

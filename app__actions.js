@@ -143,3 +143,28 @@ export async function createDebate(fd) {
   await sql`insert into debates(topic,side_a,side_b) values (${topic},${a},${b})`;
   revalidatePath('/arena');
 }
+
+export async function setWatch(fd) {
+  const me = await getUser(); if (!me) redirect('/login');
+  const id = +fd.get('id'), status = String(fd.get('status') || '');
+  if (!id) return;
+  if (status === 'remove') {
+    await sql`delete from watchlist where user_id = ${me.id} and anime_id = ${id}`;
+  } else if (['watching', 'completed', 'plan', 'dropped'].includes(status)) {
+    const title = String(fd.get('title') || '').slice(0, 200);
+    const img0 = String(fd.get('img') || '');
+    const img = img0.startsWith('https://cdn.myanimelist.net/') ? img0.slice(0, 500) : '';
+    const rating = Math.min(10, Math.max(0, +fd.get('rating') || 0)) || null;
+    await sql`insert into watchlist(user_id, anime_id, title, img, status, rating) values (${me.id}, ${id}, ${title}, ${img}, ${status}, ${rating})
+      on conflict (user_id, anime_id) do update set status = excluded.status, rating = coalesce(excluded.rating, watchlist.rating)`;
+    if (status === 'completed') {
+      const first = await sql`insert into watch_rewards(user_id, anime_id) values (${me.id}, ${id}) on conflict do nothing returning user_id`;
+      if (first.rows[0]) {
+        await award(me.id, 10, null);
+        const c = (await sql`select count(*)::int as n from watchlist where user_id = ${me.id} and status = 'completed'`).rows[0].n;
+        if (c >= 5) await award(me.id, 0, 'Binge Watcher');
+      }
+    }
+  }
+  revalidatePath('/watchlist'); revalidatePath('/anime'); revalidatePath('/profile');
+}
