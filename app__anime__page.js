@@ -4,7 +4,7 @@ import s from '../ui.module.css';
 import { sql } from '@/lib/db';
 import { getUser } from '@/lib/auth';
 import { isAdmin } from '@/lib/game';
-import { setWatch, postComment, deleteComment } from '../actions';
+import { setWatch, postComment, deleteComment, reportComment } from '../actions';
 export const dynamic = 'force-dynamic';
 const ST = [['watching', 'Watching'], ['plan', 'Plan to watch'], ['completed', 'Completed'], ['dropped', 'Dropped']];
 export default async function Anime({ searchParams }) {
@@ -16,7 +16,7 @@ export default async function Anime({ searchParams }) {
   if (!a) return <p className={s.mute}>Couldn't load this anime right now. Try again in a moment.</p>;
   const me = await getUser();
   const mine = me ? (await sql`select status, rating from watchlist where user_id = ${me.id} and anime_id = ${n}`).rows[0] : null;
-  const { rows: comments } = await sql`select c.id, c.body, c.created_at, c.user_id, u.username from comments c join users u on u.id = c.user_id where c.anime_id = ${n} order by c.id desc limit 50`;
+  const { rows: comments } = await sql`select c.id, c.body, c.created_at, c.user_id, u.username from comments c join users u on u.id = c.user_id where c.anime_id = ${n} and (select count(*) from comment_reports r where r.comment_id = c.id) < 3 order by c.id desc limit 50`;
   const img = a.images.jpg.large_image_url || a.images.jpg.image_url;
   return (<>
     <div className={s.card}>
@@ -59,6 +59,8 @@ export default async function Anime({ searchParams }) {
           <Link href={`/u?name=${encodeURIComponent(c.username)}`}><b>{c.username}</b></Link>{' '}
           <span className={s.mute}>{new Date(c.created_at).toLocaleDateString('en-US')}</span>
           <p style={{ margin: '.3rem 0' }}>{c.body}</p>
+          {me && me.id !== c.user_id && (
+            <form action={reportComment}><input type="hidden" name="id" value={c.id} /><button className={s.link}>Report</button></form>)}
           {me && (me.id === c.user_id || isAdmin(me)) && (
             <form action={deleteComment}><input type="hidden" name="id" value={c.id} /><button className={s.link}>Delete</button></form>)}
         </div>))}

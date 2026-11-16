@@ -3,7 +3,7 @@ import s from '../ui.module.css';
 import { sql } from '@/lib/db';
 import { getUser } from '@/lib/auth';
 import { isAdmin } from '@/lib/game';
-import { createQuiz, deleteQuiz, createNews, deleteNews, createDebate, createTournament } from '../actions';
+import { createQuiz, deleteQuiz, createNews, deleteNews, createDebate, createTournament, deleteComment, dismissReports, banUser, unbanUser } from '../actions';
 export const dynamic = 'force-dynamic';
 const Del = ({ action, id }) => (
   <form action={action}><input type="hidden" name="id" value={id} /><button className={s.btn}>Delete</button></form>
@@ -16,6 +16,8 @@ export default async function Admin({ searchParams }) {
   const me = await getUser();
   if (!isAdmin(me)) redirect('/');
   const { rows: quizzes } = await sql`select id, kind, question from quizzes order by id desc`;
+  const { rows: reports } = await sql`select c.id, c.body, u.username, count(r.reporter_id)::int as n from comment_reports r join comments c on c.id = r.comment_id join users u on u.id = c.user_id group by c.id, c.body, u.username order by n desc limit 30`;
+  const { rows: banned } = await sql`select username from users where banned order by username`;
   const { rows: news } = await sql`select id, tag, title from news order by id desc limit 20`;
   return (<>
     <h1>Admin Panel</h1>
@@ -45,6 +47,30 @@ export default async function Admin({ searchParams }) {
         <button className={s.btn}>Add quiz</button>
       </form>
       {quizzes.map((q) => <Row key={q.id}><span className={s.mute}>[{q.kind}] {q.question}</span><Del action={deleteQuiz} id={q.id} /></Row>)}
+    </div>
+
+    <div className={s.card}>
+      <h2>Moderation</h2>
+      <h3>Reported comments</h3>
+      {reports.length === 0 && <p className={s.mute}>No reports.</p>}
+      {reports.map((r) => (
+        <div key={r.id} style={{ margin: '.7rem 0', paddingTop: '.6rem', borderTop: '1px solid rgba(242,133,0,.2)' }}>
+          <p style={{ margin: '.2rem 0' }}><b>{r.username}</b> <span className={s.mute}>({r.n} report{r.n > 1 ? 's' : ''}{r.n >= 3 ? ', hidden' : ''})</span></p>
+          <p className={s.mute} style={{ margin: '.2rem 0' }}>{r.body}</p>
+          <div style={{ display: 'flex', gap: '.5rem', flexWrap: 'wrap' }}>
+            <Del action={deleteComment} id={r.id} />
+            <form action={dismissReports}><input type="hidden" name="id" value={r.id} /><button className={s.btn}>Dismiss</button></form>
+            <form action={banUser}><input type="hidden" name="username" value={r.username} /><button className={s.btn}>Ban author</button></form>
+          </div>
+        </div>))}
+      <h3>Ban a user</h3>
+      <form action={banUser}>
+        <input className={s.field} name="username" placeholder="Exact username" maxLength={40} required />
+        <button className={s.btn}>Ban</button>
+      </form>
+      <h3>Banned ({banned.length})</h3>
+      {banned.map((b) => <Row key={b.username}><span>{b.username}</span>
+        <form action={unbanUser}><input type="hidden" name="username" value={b.username} /><button className={s.btn}>Unban</button></form></Row>)}
     </div>
 
     <div className={s.card}>

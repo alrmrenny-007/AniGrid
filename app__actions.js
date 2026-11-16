@@ -19,8 +19,9 @@ export async function signup(fd) {
 }
 export async function login(fd) {
   const u = String(fd.get('username') || '').trim(), p = String(fd.get('password') || '');
-  const { rows } = await sql`select id, password_hash from users where username = ${u}`;
+  const { rows } = await sql`select id, password_hash, banned from users where username = ${u}`;
   if (!rows[0] || !(await bcrypt.compare(p, rows[0].password_hash))) redirect('/login?e=Invalid credentials');
+  if (rows[0].banned) redirect('/login?e=This account is suspended');
   await createSession(rows[0].id);
   redirect('/profile');
 }
@@ -107,7 +108,8 @@ export async function voteDebate(fd) {
 export async function postDebate(fd) {
   const me = await getUser(); if (!me) redirect('/login');
   const body = String(fd.get('body') || '').trim().slice(0, 500);
-  if (body) await sql`insert into debate_posts(debate_id, user_id, side, body) values (${+fd.get('id')}, ${me.id}, ${fd.get('side')}, ${body})`;
+  const recent = (await sql`select count(*)::int as n from debate_posts where user_id = ${me.id} and created_at > now() - interval '1 minute'`).rows[0].n;
+  if (body && recent < 5) await sql`insert into debate_posts(debate_id, user_id, side, body) values (${+fd.get('id')}, ${me.id}, ${fd.get('side')}, ${body})`;
   revalidatePath('/arena');
 }
 
@@ -186,6 +188,8 @@ export async function postComment(fd) {
   const me = await getUser(); if (!me) redirect('/login');
   const id = +fd.get('id'), body = String(fd.get('body') || '').trim().slice(0, 300);
   if (!id || !body) return;
+  const recent = (await sql`select count(*)::int as n from comments where user_id = ${me.id} and created_at > now() - interval '1 minute'`).rows[0].n;
+  if (recent >= 5) return;
   await sql`insert into comments(user_id, anime_id, body) values (${me.id}, ${id}, ${body})`;
   const today = (await sql`select count(*)::int as n from comments where user_id = ${me.id} and created_at >= current_date`).rows[0].n;
   if (today <= 3) await award(me.id, 2, null);
@@ -196,7 +200,7 @@ export async function postComment(fd) {
 export async function deleteComment(fd) {
   const me = await getUser(); if (!me) redirect('/login');
   const id = +fd.get('id');
-  if (isAdmin(me)) await sql`delete from comments where id = ${id}`;
+  if (isAdmin(me)) { await sql`delete from comment_reports where comment_id = ${id}`; await sql`delete from comments where id = ${id}`; }
   else await sql`delete from comments where id = ${id} and user_id = ${me.id}`;
   revalidatePath('/anime');
 }
@@ -212,4 +216,29 @@ export async function createTournament(fd) {
     await sql`insert into matchups(round, slot, a, b, tournament_id) values (1, ${i / 2}, ${entries[i]}, ${entries[i + 1]}, ${t.id})`;
   revalidatePath('/arena');
   redirect('/arena');
+}
+
+export async function reportComment(fd) {
+  const me = await getUser(); if (!me) redirect('/login');
+  const id = +fd.get('id');
+  if (!id) return;
+  await sql`insert into comment_reports(comment_id, reporter_id) values (${id}, ${me.id}) on conflict do nothing`;
+  revalidatePath('/anime'); revalidatePath('/admin');
+}
+export async function dismissReports(fd) {
+  await admin();
+  await sql`delete from comment_reports where comment_id = ${+fd.get('id')}`;
+  revalidatePath('/anime'); revalidatePath('/admin');
+}
+export async function banUser(fd) {
+  await admin();
+  const name = txt(fd, 'username', 40);
+  if (!name || name === process.env.ADMIN_USERNAME) return;
+  await sql`update users set banned = true where username = ${name}`;
+  revalidatePath('/admin');
+}
+export async function unbanUser(fd) {
+  await admin();
+  await sql`update users set banned = false where username = ${txt(fd, 'username', 40)}`;
+  revalidatePath('/admin');
 }
