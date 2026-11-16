@@ -1,6 +1,11 @@
 import { sql } from '@/lib/db';
-export async function GET() {
+export async function GET(req) {
+  const k = process.env.SETUP_KEY;
+  if (k && new URL(req.url).searchParams.get('key') !== k) return new Response('Forbidden', { status: 403 });
   await sql`create table if not exists users(id serial primary key, username text unique not null, password_hash text not null, ap int not null default 0, created_at timestamptz default now())`;
+  await sql`alter table users add column if not exists streak int not null default 0`;
+  await sql`alter table users add column if not exists last_login date`;
+  await sql`create table if not exists quiz_starts(user_id int, quiz_id int, started_at timestamptz default now(), primary key(user_id, quiz_id))`;
   await sql`create table if not exists badges(user_id int references users(id), badge text, primary key(user_id, badge))`;
   await sql`create table if not exists quizzes(id serial primary key, kind text, title text, question text, options jsonb, answer int, ap int, seconds int, badge text)`;
   await sql`create table if not exists quiz_attempts(user_id int, quiz_id int, primary key(user_id, quiz_id))`;

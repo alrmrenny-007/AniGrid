@@ -101,3 +101,12 @@
 .dot,.dotOn{height:8px;border:0;border-radius:4px;cursor:pointer;transition:width .4s,background .4s;width:8px;background:#555}
 .dotOn{width:26px;background:#F28500}
 .prog{position:absolute;left:0;bottom:0;height:3px;background:linear-gradient(90deg,#228B22,#F28500);animation:fill 5s linear}
+
+.lb{display:grid;grid-template-columns:2.4rem 1fr auto;gap:.7rem;align-items:center;padding:.75rem .9rem;border-radius:14px;margin-bottom:.55rem;background:rgba(14,14,12,.78);border:1px solid rgba(34,139,34,.4);animation:rise .6s cubic-bezier(.2,.8,.2,1) both;transition:transform .25s,box-shadow .25s}
+.lb:hover{transform:translateX(5px);box-shadow:0 0 20px -6px #228B22}
+.lb:nth-child(2n){animation-delay:.05s}.lb:nth-child(3n){animation-delay:.1s}
+.pos{font-weight:900;color:#F28500;text-align:center;font-size:1.05rem}
+.lb:nth-child(-n+4) .pos{font-size:1.4rem}
+.meRow{border-color:#F28500;box-shadow:0 0 22px -6px #F28500}
+.pts{font-weight:800;color:#7dff8f}
+.streak{display:inline-block;margin:.3rem 0;font-weight:800;color:#F28500;animation:glowtext 2s ease-in-out infinite}

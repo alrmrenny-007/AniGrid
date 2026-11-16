@@ -5,7 +5,7 @@ import { cookies } from 'next/headers';
 import { revalidatePath } from 'next/cache';
 import { sql } from '@/lib/db';
 import { createSession, getUser } from '@/lib/auth';
-import { award } from '@/lib/game';
+import { award, isAdmin } from '@/lib/game';
 
 export async function signup(fd) {
   const u = String(fd.get('username') || '').trim(), p = String(fd.get('password') || '');
@@ -26,15 +26,37 @@ export async function login(fd) {
 }
 export async function logout() { (await cookies()).delete('session'); redirect('/'); }
 
+export async function startQuiz(quizId) {
+  const me = await getUser(); if (!me) return { error: 'Log in to play' };
+  const { rows } = await sql`select seconds from quizzes where id = ${quizId}`;
+  if ((await sql`select 1 from quiz_attempts where user_id = ${me.id} and quiz_id = ${quizId}`).rows[0]) return { error: 'Already played' };
+  await sql`insert into quiz_starts(user_id, quiz_id) values (${me.id}, ${quizId}) on conflict do nothing`;
+  const st = await sql`select extract(epoch from (now() - started_at)) as el from quiz_starts where user_id = ${me.id} and quiz_id = ${quizId}`;
+  return { remaining: Math.max(0, Math.ceil(rows[0].seconds - Number(st.rows[0].el))) };
+}
+
 export async function submitQuiz(quizId, choice) {
   const me = await getUser(); if (!me) return { error: 'Log in to play' };
   const { rows } = await sql`select * from quizzes where id = ${quizId}`; const q = rows[0];
   const ins = await sql`insert into quiz_attempts(user_id, quiz_id) values (${me.id}, ${quizId}) on conflict do nothing returning user_id`;
   if (!ins.rows[0]) return { error: 'Already played' };
-  const correct = choice === q.answer;
+  const st = await sql`select extract(epoch from (now() - started_at)) as el from quiz_starts where user_id = ${me.id} and quiz_id = ${quizId}`;
+  const late = !st.rows[0] || Number(st.rows[0].el) > q.seconds + 3;
+  const correct = !late && choice === q.answer;
   if (correct) await award(me.id, q.ap, q.badge);
   revalidatePath('/quiz'); revalidatePath('/profile');
-  return { correct, ap: correct ? q.ap : 0, answer: q.answer };
+  return { correct, late, ap: correct ? q.ap : 0, answer: q.answer };
+}
+
+export async function claimDaily() {
+  const me = await getUser(); if (!me) redirect('/login');
+  const { rows } = await sql`select streak, last_login, (current_date - last_login) as gap from users where id = ${me.id}`;
+  const u = rows[0];
+  if (u.last_login && Number(u.gap) === 0) return;
+  const streak = u.last_login && Number(u.gap) === 1 ? u.streak + 1 : 1;
+  await sql`update users set streak = ${streak}, last_login = current_date where id = ${me.id}`;
+  await award(me.id, 10 + 5 * Math.min(streak - 1, 6), streak >= 30 ? 'Devoted' : streak >= 7 ? '7-Day Streak' : null);
+  revalidatePath('/profile'); revalidatePath('/leaderboard');
 }
 
 export async function voteMatchup(fd) {
@@ -49,6 +71,7 @@ export async function voteMatchup(fd) {
   revalidatePath('/arena');
 }
 export async function advanceRound() {
+  if (!isAdmin(await getUser())) return;
   const { rows: m } = await sql`select * from matchups order by round desc, slot`;
   const cur = m.filter((x) => x.round === m[0].round);
   if (cur.length < 2) return;

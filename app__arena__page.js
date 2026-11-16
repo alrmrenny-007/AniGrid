@@ -1,5 +1,7 @@
 import s from '../ui.module.css';
 import { sql } from '@/lib/db';
+import { getUser } from '@/lib/auth';
+import { isAdmin } from '@/lib/game';
 import { voteMatchup, advanceRound, voteDebate, postDebate } from '../actions';
 const Vote = ({ action, id, a, b }) => (
   <form action={action} className={s.vs}>
@@ -8,6 +10,7 @@ const Vote = ({ action, id, a, b }) => (
     <button className={s.btn} name="side" value="b">{b}</button>
   </form>);
 export default async function Arena() {
+  const me = await getUser();
   const { rows: m } = await sql`select * from matchups order by round, slot`;
   const { rows: d } = await sql`select * from debates order by id`;
   const { rows: p } = await sql`select p.*, u.username from debate_posts p join users u on u.id = p.user_id order by p.id desc limit 50`;
@@ -20,7 +23,7 @@ export default async function Arena() {
       {m.filter((x) => x.round === r).map((x) => (<div key={x.id} className={s.card}>
         <Vote action={voteMatchup} id={x.id} a={x.a} b={x.b} />
         <p className={s.mute}>{x.votes_a} – {x.votes_b} (+5 AP per vote)</p></div>))}</div>))}
-    {top.length > 1 && <form action={advanceRound}><button className={s.btn}>Close round & advance winners</button></form>}
+    {top.length > 1 && isAdmin(me) && <form action={advanceRound}><button className={s.btn}>Close round & advance winners</button></form>}
     {top.length === 1 && rounds.length > 1 && <h2>🏆 Champion: {top[0].votes_b > top[0].votes_a ? top[0].b : top[0].a}</h2>}
     <h2>1v1 Debates</h2>
     {d.map((x) => (<div key={x.id} className={s.card}>

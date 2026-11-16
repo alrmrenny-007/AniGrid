@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import s from './ui.module.css';
-const L = [['/', 'Home'], ['/quiz', 'Quizzes'], ['/arena', 'GOAT Arena']];
+const L = [['/', 'Home'], ['/quiz', 'Quizzes'], ['/arena', 'GOAT Arena'], ['/leaderboard', 'Ranks']];
 export default function Nav({ me, logout }) {
   const path = usePathname();
   const [open, setOpen] = useState(false);
