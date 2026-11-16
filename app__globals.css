@@ -1,25 +1,23 @@
 @property --a{syntax:'<angle>';inherits:false;initial-value:0deg}
-:root{--bg:#000;--ink:#f5f1ea;--mute:#9c9c92;--pink:#F28500;--violet:#228B22;--blue:#34b34a}
+:root{--ink:#f4f0e8;--mute:#9a978c;--pink:#F28500;--violet:#228B22;--blue:#34b34a}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html{scroll-behavior:smooth;background:#000}
-body{margin:0;background:#000;color:var(--ink);font-family:system-ui,-apple-system,'Segoe UI',sans-serif;min-height:100vh;overflow-x:hidden}
+body{margin:0;color:var(--ink);font-family:var(--font-body),system-ui,sans-serif;min-height:100vh;overflow-x:hidden;line-height:1.5;
+ background:#000;background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);background-size:44px 44px}
 body::before{content:'';position:fixed;inset:-10%;z-index:-3;pointer-events:none;
- background:radial-gradient(40% 35% at 12% 18%,rgba(34,139,34,.2),transparent 70%),radial-gradient(35% 30% at 88% 88%,rgba(242,133,0,.17),transparent 70%);
- animation:drift 18s ease-in-out infinite alternate}
-body::after{content:'';position:fixed;inset:0;z-index:-2;pointer-events:none;
- background-image:radial-gradient(1.5px 1.5px at 12% 22%,#34b34a,transparent),radial-gradient(1px 1px at 35% 68%,#F28500,transparent),radial-gradient(1.5px 1.5px at 62% 30%,#34b34a,transparent),radial-gradient(1px 1px at 82% 58%,#F28500,transparent),radial-gradient(2px 2px at 92% 12%,#ffa94d,transparent);
- background-size:300px 300px;animation:twinkle 3.5s ease-in-out infinite alternate}
+ background:radial-gradient(40% 35% at 10% 12%,rgba(34,139,34,.22),transparent 70%),radial-gradient(38% 32% at 92% 90%,rgba(242,133,0,.2),transparent 70%);animation:drift 18s ease-in-out infinite alternate}
+body::after{content:'';position:fixed;inset:0;z-index:-2;pointer-events:none;background:radial-gradient(ellipse at center,transparent 45%,#000 100%)}
 html::before{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;
- background-image:radial-gradient(3px 3px at 20% 80%,rgba(242,133,0,.9),transparent),radial-gradient(2px 2px at 55% 60%,rgba(255,169,77,.8),transparent),radial-gradient(3px 3px at 80% 90%,rgba(242,133,0,.8),transparent),radial-gradient(2px 2px at 40% 30%,rgba(52,179,74,.7),transparent);
+ background-image:radial-gradient(2.5px 2.5px at 20% 80%,rgba(242,133,0,.9),transparent),radial-gradient(2px 2px at 55% 60%,rgba(255,169,77,.8),transparent),radial-gradient(3px 3px at 80% 90%,rgba(242,133,0,.8),transparent),radial-gradient(2px 2px at 40% 30%,rgba(52,179,74,.7),transparent);
  background-size:360px 600px;animation:embers 16s linear infinite}
 @keyframes drift{to{transform:translate3d(4%,3%,0) scale(1.12)}}
-@keyframes twinkle{from{opacity:.25}to{opacity:.9}}
 @keyframes embers{to{background-position:60px -600px}}
 a{color:var(--blue);text-decoration:none}
-h1,h2,h3{margin:.4em 0;letter-spacing:-.01em}
-h1{font-size:2rem;background:linear-gradient(90deg,#fff,#F28500,#34b34a,#fff);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:flow 6s linear infinite}
-@keyframes flow{to{background-position:-200% 0}}
-h2{color:#ffb866}
-input,button,textarea{font:inherit}
+h1,h2,h3{font-family:var(--font-head),sans-serif;margin:.4em 0;line-height:1.15}
+h1{font-size:2rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;background:linear-gradient(90deg,#fff 30%,#F28500);-webkit-background-clip:text;background-clip:text;color:transparent}
+h2{font-size:1.05rem;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:#ffb866}
+h2::before{content:'';display:inline-block;width:4px;height:1em;background:#F28500;margin-right:.6rem;vertical-align:-.14em;box-shadow:0 0 10px #F28500}
+h3{font-weight:600;letter-spacing:.02em}
+input,button,textarea,select{font:inherit}
 ::selection{background:#F28500;color:#000}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
