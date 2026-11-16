@@ -21,7 +21,7 @@ export default function Nav({ me, logout, admin }) {
           {me ? (<>
             <Link href="/profile" className={`${cls('/profile')} ${s.pill}`}>{me.username} · {me.ap} AP</Link>
             <form action={logout}><button className={s.item}>Logout</button></form>
-          </>) : <Link href="/login" className={cls('/login')}>Login</Link>}
+          </>) : <><Link href="/login" className={cls('/login')}>Login</Link><Link href="/signup" className={`${cls('/signup')} ${s.pill}`}>Sign up</Link></>}
         </div>
       </div>
     </nav>

@@ -1,5 +1,7 @@
 'use server';
 import bcrypt from 'bcryptjs';
+import { randomBytes } from 'crypto';
+import { notifyAll, vapid } from '@/lib/push';
 import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
 import { revalidatePath } from 'next/cache';
@@ -9,13 +11,15 @@ import { award, isAdmin } from '@/lib/game';
 
 export async function signup(fd) {
   const u = String(fd.get('username') || '').trim(), p = String(fd.get('password') || '');
-  if (u.length < 3 || p.length < 6) redirect('/login?e=Username 3+ chars, password 6+ chars');
+  if (u.length < 3 || u.length > 24 || !/^[A-Za-z0-9_.-]+$/.test(u)) redirect('/signup?e=Username: 3-24 letters, numbers, _ . - only');
+  if (p.length < 6) redirect('/signup?e=Password must be 6+ characters');
+  if (p !== String(fd.get('confirm') || '')) redirect('/signup?e=Passwords do not match');
   const hash = await bcrypt.hash(p, 10);
   const { rows } = await sql`insert into users(username, password_hash) values (${u}, ${hash}) on conflict do nothing returning id`;
-  if (!rows[0]) redirect('/login?e=Username taken');
+  if (!rows[0]) redirect('/signup?e=Username taken');
   await award(rows[0].id, 10, 'Newcomer');
   await createSession(rows[0].id);
-  redirect('/profile');
+  redirect('/profile?new=1');
 }
 export async function login(fd) {
   const u = String(fd.get('username') || '').trim(), p = String(fd.get('password') || '');
@@ -129,6 +133,7 @@ export async function createQuiz(fd) {
   const ap = Math.min(500, Math.max(1, +fd.get('ap') || 15));
   const badge = txt(fd, 'badge', 40) || null;
   await sql`insert into quizzes(kind,title,question,options,answer,seconds,ap,badge) values (${kind},${kind === 'weekly' ? 'Weekly Contest' : 'Pop Quiz'},${q},${JSON.stringify(opts)}::jsonb,${idx},${secs},${ap},${badge})`;
+  if (kind === 'weekly') { try { await notifyAll({ title: '🏆 New weekly contest!', body: q, url: '/quiz' }); } catch {} }
   revalidatePath('/quiz'); revalidatePath('/admin');
 }
 export async function deleteQuiz(fd) {
@@ -214,6 +219,7 @@ export async function createTournament(fd) {
   const t = (await sql`insert into tournaments(title) values (${title}) returning id`).rows[0];
   for (let i = 0; i < entries.length; i += 2)
     await sql`insert into matchups(round, slot, a, b, tournament_id) values (1, ${i / 2}, ${entries[i]}, ${entries[i + 1]}, ${t.id})`;
+  try { await notifyAll({ title: '🐐 New bracket is live!', body: title, url: '/arena' }); } catch {}
   revalidatePath('/arena');
   redirect('/arena');
 }
@@ -241,4 +247,52 @@ export async function unbanUser(fd) {
   await admin();
   await sql`update users set banned = false where username = ${txt(fd, 'username', 40)}`;
   revalidatePath('/admin');
+}
+
+const norm = (c) => String(c || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+function makeCode() {
+  const A = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let s = '';
+  for (const x of randomBytes(12)) s += A[x % 32];
+  return s.match(/.{4}/g).join('-');
+}
+export async function generateRecovery() {
+  const me = await getUser(); if (!me) return { error: 'Log in first' };
+  const code = makeCode();
+  await sql`update users set recovery_hash = ${await bcrypt.hash(norm(code), 10)} where id = ${me.id}`;
+  return { code };
+}
+export async function adminResetCode(fd) {
+  await admin();
+  const r = (await sql`select id from users where username = ${txt(fd, 'username', 40)}`).rows[0];
+  if (!r) return { error: 'User not found' };
+  const code = makeCode();
+  await sql`update users set recovery_hash = ${await bcrypt.hash(norm(code), 10)} where id = ${r.id}`;
+  return { code };
+}
+export async function resetPassword(fd) {
+  const name = txt(fd, 'username', 40), p = String(fd.get('password') || '');
+  if (p.length < 6) redirect('/forgot?e=Password must be 6+ characters');
+  if (p !== String(fd.get('confirm') || '')) redirect('/forgot?e=Passwords do not match');
+  const r = (await sql`select id, recovery_hash, banned from users where username = ${name}`).rows[0];
+  if (!r || !r.recovery_hash || !(await bcrypt.compare(norm(fd.get('code')), r.recovery_hash))) redirect('/forgot?e=Invalid username or recovery code');
+  if (r.banned) redirect('/login?e=This account is suspended');
+  await sql`update users set password_hash = ${await bcrypt.hash(p, 10)}, recovery_hash = null where id = ${r.id}`;
+  await createSession(r.id);
+  redirect('/profile?reset=1');
+}
+export async function getPushKey() { return await vapid(); }
+export async function savePush(sub) {
+  const me = await getUser();
+  if (!me || !sub?.endpoint || !sub?.keys) return;
+  await sql`insert into push_subs(endpoint, user_id, p256dh, auth) values (${sub.endpoint}, ${me.id}, ${sub.keys.p256dh}, ${sub.keys.auth}) on conflict (endpoint) do update set user_id = excluded.user_id`;
+}
+export async function sendPush(fd) {
+  await admin();
+  const title = txt(fd, 'title', 60), body = txt(fd, 'body', 160), url = txt(fd, 'url', 100);
+  if (!title) redirect('/admin?e=Add a title');
+  let n = 0, bad = '';
+  try { n = await notifyAll({ title, body, url: url.startsWith('/') ? url : '/' }); } catch (err) { bad = String(err.message).slice(0, 80); }
+  if (bad) redirect('/admin?e=' + encodeURIComponent('Push failed: ' + bad));
+  redirect('/admin?ok=' + encodeURIComponent(`Sent to ${n} device(s)`));
 }

@@ -3,7 +3,8 @@ import s from '../ui.module.css';
 import { sql } from '@/lib/db';
 import { getUser } from '@/lib/auth';
 import { isAdmin } from '@/lib/game';
-import { createQuiz, deleteQuiz, createNews, deleteNews, createDebate, createTournament, deleteComment, dismissReports, banUser, unbanUser } from '../actions';
+import { createQuiz, deleteQuiz, createNews, deleteNews, createDebate, createTournament, deleteComment, dismissReports, banUser, unbanUser, adminResetCode, sendPush } from '../actions';
+import CodeForm from '../CodeForm';
 export const dynamic = 'force-dynamic';
 const Del = ({ action, id }) => (
   <form action={action}><input type="hidden" name="id" value={id} /><button className={s.btn}>Delete</button></form>
@@ -12,16 +13,18 @@ const Row = ({ children }) => (
   <div style={{ display: 'flex', gap: '.6rem', alignItems: 'center', justifyContent: 'space-between', margin: '.5rem 0' }}>{children}</div>
 );
 export default async function Admin({ searchParams }) {
-  const { e } = await searchParams;
+  const { e, ok } = await searchParams;
   const me = await getUser();
   if (!isAdmin(me)) redirect('/');
   const { rows: quizzes } = await sql`select id, kind, question from quizzes order by id desc`;
   const { rows: reports } = await sql`select c.id, c.body, u.username, count(r.reporter_id)::int as n from comment_reports r join comments c on c.id = r.comment_id join users u on u.id = c.user_id group by c.id, c.body, u.username order by n desc limit 30`;
   const { rows: banned } = await sql`select username from users where banned order by username`;
+  const subs = (await sql`select count(*)::int as n from push_subs`).rows[0].n;
   const { rows: news } = await sql`select id, tag, title from news order by id desc limit 20`;
   return (<>
     <h1>Admin Panel</h1>
     {e && <p className={s.err}>{e}</p>}
+    {ok && <p className={s.badge}>{ok}</p>}
 
     <div className={s.card}>
       <h2>Post news</h2>
@@ -71,6 +74,23 @@ export default async function Admin({ searchParams }) {
       <h3>Banned ({banned.length})</h3>
       {banned.map((b) => <Row key={b.username}><span>{b.username}</span>
         <form action={unbanUser}><input type="hidden" name="username" value={b.username} /><button className={s.btn}>Unban</button></form></Row>)}
+    </div>
+
+    <div className={s.card}>
+      <h2>Push notification</h2>
+      <p className={s.mute}>{subs} device(s) subscribed. New weekly contests and brackets notify automatically.</p>
+      <form action={sendPush}>
+        <input className={s.field} name="title" placeholder="Title" maxLength={60} required />
+        <input className={s.field} name="body" placeholder="Message" maxLength={160} />
+        <input className={s.field} name="url" placeholder="Open page (e.g. /quiz) optional" maxLength={100} />
+        <button className={s.btn}>Send to everyone</button>
+      </form>
+    </div>
+
+    <div className={s.card}>
+      <h2>Reset a user's password</h2>
+      <p className={s.mute}>Generates a one-time recovery code. Send it to the user; they enter it on the Forgot password page.</p>
+      <CodeForm action={adminResetCode} label="Generate code" withUser />
     </div>
 
     <div className={s.card}>
