@@ -70,14 +70,27 @@ export async function voteMatchup(fd) {
   }
   revalidatePath('/arena');
 }
-export async function advanceRound() {
+export async function advanceRound(fd) {
   if (!isAdmin(await getUser())) return;
-  const { rows: m } = await sql`select * from matchups order by round desc, slot`;
+  const tid = +fd.get('tid');
+  const { rows: m } = await sql`select * from matchups where tournament_id = ${tid} order by round desc, slot`;
+  if (!m.length) return;
   const cur = m.filter((x) => x.round === m[0].round);
   if (cur.length < 2) return;
   const w = cur.map((x) => (x.votes_b > x.votes_a ? x.b : x.a));
   for (let i = 0; i < w.length; i += 2)
-    await sql`insert into matchups(round, slot, a, b) values (${cur[0].round + 1}, ${i / 2}, ${w[i]}, ${w[i + 1]})`;
+    await sql`insert into matchups(round, slot, a, b, tournament_id) values (${cur[0].round + 1}, ${i / 2}, ${w[i]}, ${w[i + 1]}, ${tid})`;
+  revalidatePath('/arena');
+}
+export async function finishTournament(fd) {
+  if (!isAdmin(await getUser())) return;
+  const tid = +fd.get('tid');
+  const { rows: m } = await sql`select * from matchups where tournament_id = ${tid} order by round desc, slot`;
+  if (!m.length) return;
+  const cur = m.filter((x) => x.round === m[0].round);
+  if (cur.length !== 1) return;
+  const f = cur[0];
+  await sql`update tournaments set champion = ${f.votes_b > f.votes_a ? f.b : f.a} where id = ${tid}`;
   revalidatePath('/arena');
 }
 export async function voteDebate(fd) {
@@ -186,4 +199,17 @@ export async function deleteComment(fd) {
   if (isAdmin(me)) await sql`delete from comments where id = ${id}`;
   else await sql`delete from comments where id = ${id} and user_id = ${me.id}`;
   revalidatePath('/anime');
+}
+
+export async function createTournament(fd) {
+  await admin();
+  const title = txt(fd, 'title', 80);
+  const entries = [...new Set(String(fd.get('entries') || '').split('\n').map((x) => x.trim().slice(0, 60)).filter(Boolean))];
+  if (!title) redirect('/admin?e=Add a title');
+  if (![4, 8, 16].includes(entries.length)) redirect(`/admin?e=Need exactly 4, 8 or 16 unique entries (you gave ${entries.length})`);
+  const t = (await sql`insert into tournaments(title) values (${title}) returning id`).rows[0];
+  for (let i = 0; i < entries.length; i += 2)
+    await sql`insert into matchups(round, slot, a, b, tournament_id) values (1, ${i / 2}, ${entries[i]}, ${entries[i + 1]}, ${t.id})`;
+  revalidatePath('/arena');
+  redirect('/arena');
 }

@@ -14,6 +14,8 @@ export async function GET(req) {
   await sql`create table if not exists quizzes(id serial primary key, kind text, title text, question text, options jsonb, answer int, ap int, seconds int, badge text)`;
   await sql`create table if not exists quiz_attempts(user_id int, quiz_id int, primary key(user_id, quiz_id))`;
   await sql`create table if not exists matchups(id serial primary key, round int, slot int, a text, b text, votes_a int default 0, votes_b int default 0)`;
+  await sql`create table if not exists tournaments(id serial primary key, title text, champion text, created_at timestamptz default now())`;
+  await sql`alter table matchups add column if not exists tournament_id int not null default 0`;
   await sql`create table if not exists matchup_votes(user_id int, matchup_id int, primary key(user_id, matchup_id))`;
   await sql`create table if not exists debates(id serial primary key, topic text, side_a text, side_b text, votes_a int default 0, votes_b int default 0)`;
   await sql`create table if not exists debate_votes(user_id int, debate_id int, primary key(user_id, debate_id))`;
@@ -30,5 +32,7 @@ export async function GET(req) {
     for (let i = 0; i < 4; i++) await sql`insert into matchups(round,slot,a,b) values (1,${i},${A[i * 2]},${A[i * 2 + 1]})`;
     await sql`insert into debates(topic,side_a,side_b) values ('Greatest rival ever?','Naruto vs Sasuke','Light vs L'), ('Best protagonist?','Goku','Luffy')`;
   }
+  await sql`insert into tournaments(title) select 'Anime GOAT Bracket' where not exists (select 1 from tournaments)`;
+  await sql`update matchups set tournament_id = (select min(id) from tournaments) where tournament_id = 0`;
   return Response.json({ ok: true });
 }

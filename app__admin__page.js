@@ -3,7 +3,7 @@ import s from '../ui.module.css';
 import { sql } from '@/lib/db';
 import { getUser } from '@/lib/auth';
 import { isAdmin } from '@/lib/game';
-import { createQuiz, deleteQuiz, createNews, deleteNews, createDebate } from '../actions';
+import { createQuiz, deleteQuiz, createNews, deleteNews, createDebate, createTournament } from '../actions';
 export const dynamic = 'force-dynamic';
 const Del = ({ action, id }) => (
   <form action={action}><input type="hidden" name="id" value={id} /><button className={s.btn}>Delete</button></form>
@@ -11,13 +11,15 @@ const Del = ({ action, id }) => (
 const Row = ({ children }) => (
   <div style={{ display: 'flex', gap: '.6rem', alignItems: 'center', justifyContent: 'space-between', margin: '.5rem 0' }}>{children}</div>
 );
-export default async function Admin() {
+export default async function Admin({ searchParams }) {
+  const { e } = await searchParams;
   const me = await getUser();
   if (!isAdmin(me)) redirect('/');
   const { rows: quizzes } = await sql`select id, kind, question from quizzes order by id desc`;
   const { rows: news } = await sql`select id, tag, title from news order by id desc limit 20`;
   return (<>
     <h1>Admin Panel</h1>
+    {e && <p className={s.err}>{e}</p>}
 
     <div className={s.card}>
       <h2>Post news</h2>
@@ -43,6 +45,16 @@ export default async function Admin() {
         <button className={s.btn}>Add quiz</button>
       </form>
       {quizzes.map((q) => <Row key={q.id}><span className={s.mute}>[{q.kind}] {q.question}</span><Del action={deleteQuiz} id={q.id} /></Row>)}
+    </div>
+
+    <div className={s.card}>
+      <h2>New bracket</h2>
+      <p className={s.mute}>Enter exactly 4, 8 or 16 names, one per line. Neighbors face each other in round 1. This becomes the active bracket.</p>
+      <form action={createTournament}>
+        <input className={s.field} name="title" placeholder="Bracket title (e.g. Greatest Villain)" maxLength={80} required />
+        <textarea className={s.field} name="entries" rows={8} placeholder={"Naruto\nOne Piece\nBleach\nDeath Note"} required />
+        <button className={s.btn}>Create bracket</button>
+      </form>
     </div>
 
     <div className={s.card}>
