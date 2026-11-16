@@ -1,30 +1,25 @@
 @property --a{syntax:'<angle>';inherits:false;initial-value:0deg}
-:root{--bg:#07061a;--ink:#f3eeff;--mute:#a79fcf;--pink:#ff4d8d;--violet:#7a5cff;--blue:#4dc3ff}
+:root{--bg:#000;--ink:#f5f1ea;--mute:#9c9c92;--pink:#F28500;--violet:#228B22;--blue:#34b34a}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html{scroll-behavior:smooth}
-body{margin:0;background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,'Segoe UI',sans-serif;min-height:100vh;overflow-x:hidden}
-/* aurora */
-body::before{content:'';position:fixed;inset:-20%;z-index:-3;pointer-events:none;
- background:radial-gradient(40% 35% at 20% 25%,rgba(122,92,255,.55),transparent 70%),
- radial-gradient(35% 30% at 80% 20%,rgba(255,77,141,.4),transparent 70%),
- radial-gradient(45% 40% at 60% 85%,rgba(77,195,255,.35),transparent 70%);
- filter:blur(40px);animation:aurora 22s ease-in-out infinite alternate}
-/* twinkling stars */
-body::after{content:'';position:fixed;inset:0;z-index:-2;pointer-events:none;opacity:.8;
- background-image:radial-gradient(1.5px 1.5px at 10% 20%,#fff,transparent),radial-gradient(1px 1px at 30% 70%,#fff,transparent),radial-gradient(1.5px 1.5px at 55% 35%,#cfe,transparent),radial-gradient(1px 1px at 75% 60%,#fff,transparent),radial-gradient(2px 2px at 90% 15%,#fdf,transparent),radial-gradient(1px 1px at 45% 90%,#fff,transparent);
- background-size:320px 320px;animation:twinkle 4s ease-in-out infinite alternate}
-/* falling sakura */
+html{scroll-behavior:smooth;background:#000}
+body{margin:0;background:#000;color:var(--ink);font-family:system-ui,-apple-system,'Segoe UI',sans-serif;min-height:100vh;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:-10%;z-index:-3;pointer-events:none;
+ background:radial-gradient(40% 35% at 12% 18%,rgba(34,139,34,.2),transparent 70%),radial-gradient(35% 30% at 88% 88%,rgba(242,133,0,.17),transparent 70%);
+ animation:drift 18s ease-in-out infinite alternate}
+body::after{content:'';position:fixed;inset:0;z-index:-2;pointer-events:none;
+ background-image:radial-gradient(1.5px 1.5px at 12% 22%,#34b34a,transparent),radial-gradient(1px 1px at 35% 68%,#F28500,transparent),radial-gradient(1.5px 1.5px at 62% 30%,#34b34a,transparent),radial-gradient(1px 1px at 82% 58%,#F28500,transparent),radial-gradient(2px 2px at 92% 12%,#ffa94d,transparent);
+ background-size:300px 300px;animation:twinkle 3.5s ease-in-out infinite alternate}
 html::before{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;
- background-image:radial-gradient(5px 3px at 20% 10%,rgba(255,170,200,.9),transparent),radial-gradient(4px 2.5px at 60% 40%,rgba(255,190,215,.8),transparent),radial-gradient(6px 3.5px at 85% 70%,rgba(255,150,190,.8),transparent),radial-gradient(3px 2px at 40% 85%,rgba(255,200,220,.8),transparent);
- background-size:380px 520px;animation:petals 14s linear infinite}
-@keyframes aurora{to{transform:translate3d(6%,4%,0) rotate(8deg) scale(1.15)}}
-@keyframes twinkle{from{opacity:.35}to{opacity:.95}}
-@keyframes petals{to{background-position:-140px 520px}}
+ background-image:radial-gradient(3px 3px at 20% 80%,rgba(242,133,0,.9),transparent),radial-gradient(2px 2px at 55% 60%,rgba(255,169,77,.8),transparent),radial-gradient(3px 3px at 80% 90%,rgba(242,133,0,.8),transparent),radial-gradient(2px 2px at 40% 30%,rgba(52,179,74,.7),transparent);
+ background-size:360px 600px;animation:embers 16s linear infinite}
+@keyframes drift{to{transform:translate3d(4%,3%,0) scale(1.12)}}
+@keyframes twinkle{from{opacity:.25}to{opacity:.9}}
+@keyframes embers{to{background-position:60px -600px}}
 a{color:var(--blue);text-decoration:none}
 h1,h2,h3{margin:.4em 0;letter-spacing:-.01em}
-h1{font-size:2rem;background:linear-gradient(90deg,#fff,#ffb3d1,#b9a6ff,#9fe3ff);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:flow 6s linear infinite}
+h1{font-size:2rem;background:linear-gradient(90deg,#fff,#F28500,#34b34a,#fff);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;animation:flow 6s linear infinite}
 @keyframes flow{to{background-position:-200% 0}}
-h2{color:#ffd6e8}
+h2{color:#ffb866}
 input,button,textarea{font:inherit}
-::selection{background:var(--pink);color:#fff}
+::selection{background:#F28500;color:#000}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
