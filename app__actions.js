@@ -2,6 +2,7 @@
 import bcrypt from 'bcryptjs';
 import { randomBytes } from 'crypto';
 import { notifyAll, vapid } from '@/lib/push';
+import { charById, TASKS } from '@/lib/chars';
 import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
 import { revalidatePath } from 'next/cache';
@@ -19,6 +20,7 @@ export async function signup(fd) {
   if (!rows[0]) redirect('/signup?e=Username taken');
   await award(rows[0].id, 10, 'Newcomer');
   await createSession(rows[0].id);
+  (await cookies()).set('pickchar', '1', { path: '/', httpOnly: true, maxAge: 60 * 60 * 24 * 7 });
   redirect('/profile?new=1');
 }
 export async function login(fd) {
@@ -48,7 +50,7 @@ export async function submitQuiz(quizId, choice) {
   const st = await sql`select extract(epoch from (now() - started_at)) as el from quiz_starts where user_id = ${me.id} and quiz_id = ${quizId}`;
   const late = !st.rows[0] || Number(st.rows[0].el) > q.seconds + 3;
   const correct = !late && choice === q.answer;
-  if (correct) await award(me.id, q.ap, q.badge);
+  if (correct) await award(me.id, q.ap, q.badge, 'quiz');
   revalidatePath('/quiz'); revalidatePath('/profile');
   return { correct, late, ap: correct ? q.ap : 0, answer: q.answer };
 }
@@ -60,7 +62,7 @@ export async function claimDaily() {
   if (u.last_login && Number(u.gap) === 0) return;
   const streak = u.last_login && Number(u.gap) === 1 ? u.streak + 1 : 1;
   await sql`update users set streak = ${streak}, last_login = current_date where id = ${me.id}`;
-  await award(me.id, 10 + 5 * Math.min(streak - 1, 6), streak >= 30 ? 'Devoted' : streak >= 7 ? '7-Day Streak' : null);
+  await award(me.id, 10 + 5 * Math.min(streak - 1, 6), streak >= 30 ? 'Devoted' : streak >= 7 ? '7-Day Streak' : null, 'daily');
   revalidatePath('/profile'); revalidatePath('/leaderboard');
 }
 
@@ -71,7 +73,7 @@ export async function voteMatchup(fd) {
   if (r.rows[0]) {
     if (side === 'a') await sql`update matchups set votes_a = votes_a + 1 where id = ${id}`;
     else await sql`update matchups set votes_b = votes_b + 1 where id = ${id}`;
-    await award(me.id, 5, 'Arena Voter');
+    await award(me.id, 5, 'Arena Voter', 'vote');
   }
   revalidatePath('/arena');
 }
@@ -105,7 +107,7 @@ export async function voteDebate(fd) {
   if (r.rows[0]) {
     if (side === 'a') await sql`update debates set votes_a = votes_a + 1 where id = ${id}`;
     else await sql`update debates set votes_b = votes_b + 1 where id = ${id}`;
-    await award(me.id, 5, 'Debater');
+    await award(me.id, 5, 'Debater', 'vote');
   }
   revalidatePath('/arena');
 }
@@ -180,7 +182,7 @@ export async function setWatch(fd) {
     if (status === 'completed') {
       const first = await sql`insert into watch_rewards(user_id, anime_id) values (${me.id}, ${id}) on conflict do nothing returning user_id`;
       if (first.rows[0]) {
-        await award(me.id, 10, null);
+        await award(me.id, 10, null, 'watch');
         const c = (await sql`select count(*)::int as n from watchlist where user_id = ${me.id} and status = 'completed'`).rows[0].n;
         if (c >= 5) await award(me.id, 0, 'Binge Watcher');
       }
@@ -197,7 +199,7 @@ export async function postComment(fd) {
   if (recent >= 5) return;
   await sql`insert into comments(user_id, anime_id, body) values (${me.id}, ${id}, ${body})`;
   const today = (await sql`select count(*)::int as n from comments where user_id = ${me.id} and created_at >= current_date`).rows[0].n;
-  if (today <= 3) await award(me.id, 2, null);
+  if (today <= 3) await award(me.id, 2, null, 'comment');
   const total = (await sql`select count(*)::int as n from comments where user_id = ${me.id}`).rows[0].n;
   if (total >= 10) await award(me.id, 0, 'Commentator');
   revalidatePath('/anime'); revalidatePath('/profile');
@@ -295,4 +297,28 @@ export async function sendPush(fd) {
   try { n = await notifyAll({ title, body, url: url.startsWith('/') ? url : '/' }); } catch (err) { bad = String(err.message).slice(0, 80); }
   if (bad) redirect('/admin?e=' + encodeURIComponent('Push failed: ' + bad));
   redirect('/admin?ok=' + encodeURIComponent(`Sent to ${n} device(s)`));
+}
+
+export async function chooseCharacter(fd) {
+  const me = await getUser(); if (!me) redirect('/login');
+  const target = charById(String(fd.get('id') || ''));
+  if (!target) return;
+  const row = (await sql`select character from users where id = ${me.id}`).rows[0];
+  if (row.character === target.id) return;
+  const stop = (m) => redirect('/characters?e=' + encodeURIComponent(m));
+  if (me.ap < target.cost) stop(`${target.name} needs ${target.cost} AP`);
+  if (row.character) {
+    const cur = charById(row.character);
+    const [label, need] = TASKS[cur.main];
+    const done = (await sql`select count(*)::int as n from events where user_id = ${me.id} and cat = ${cur.main} and created_at >= (select char_since from users where id = ${me.id})`).rows[0].n;
+    if (done < need) stop(`Finish your clan task first: ${label} (${done}/${need})`);
+  }
+  await sql`update users set character = ${target.id}, char_since = now() where id = ${me.id}`;
+  (await cookies()).delete('pickchar');
+  revalidatePath('/', 'layout');
+  redirect('/characters?ok=' + encodeURIComponent(`You joined ${target.clan}!`));
+}
+export async function skipPicker() {
+  (await cookies()).delete('pickchar');
+  revalidatePath('/', 'layout');
 }

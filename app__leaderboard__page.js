@@ -3,10 +3,11 @@ import s from '../ui.module.css';
 import { sql } from '@/lib/db';
 import { getUser } from '@/lib/auth';
 import { rankOf } from '@/lib/game';
+import { charById } from '@/lib/chars';
 export const dynamic = 'force-dynamic';
 export default async function Leaderboard() {
   const me = await getUser();
-  const { rows } = await sql`select id, username, ap from users order by ap desc, id limit 50`;
+  const { rows } = await sql`select id, username, ap, character from users order by ap desc, id limit 50`;
   const medal = ['🥇', '🥈', '🥉'];
   return (<>
     <h1>Leaderboard</h1>
@@ -15,7 +16,7 @@ export default async function Leaderboard() {
       {rows.map((u, i) => (
         <div key={u.id} className={`${s.lb} ${me?.id === u.id ? s.meRow : ''}`}>
           <span className={s.pos}>{medal[i] || i + 1}</span>
-          <span><Link href={`/u?name=${encodeURIComponent(u.username)}`} style={{ color: 'inherit' }}><b>{u.username}</b></Link> <span className={s.mute}>{rankOf(u.ap)}</span></span>
+          <span><Link href={`/u?name=${encodeURIComponent(u.username)}`} style={{ color: 'inherit' }}><b>{u.username}</b></Link> <span className={s.mute}>{charById(u.character)?.emoji} {rankOf(u.ap)}</span></span>
           <span className={s.pts}>{u.ap} AP</span>
         </div>))}
     </div>

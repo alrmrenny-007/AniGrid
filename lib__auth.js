@@ -11,7 +11,7 @@ export async function getUser() {
   if (!t) return null;
   try {
     const { payload } = await jwtVerify(t, key());
-    const { rows } = await sql`select id, username, ap, banned from users where id = ${payload.id}`;
+    const { rows } = await sql`select id, username, ap, banned, character from users where id = ${payload.id}`;
     const u = rows[0];
     return u && !u.banned ? u : null;
   } catch { return null; }

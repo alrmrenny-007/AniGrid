@@ -3,6 +3,8 @@ import s from '../ui.module.css';
 import { sql } from '@/lib/db';
 import { getUser } from '@/lib/auth';
 import { rankOf, nextTier } from '@/lib/game';
+import Link from 'next/link';
+import { charById, perkText, TASKS } from '@/lib/chars';
 import { claimDaily, generateRecovery, getPushKey, savePush } from '../actions';
 import CodeForm from '../CodeForm';
 import PushButton from '../PushButton';
@@ -18,6 +20,7 @@ export default async function Profile({ searchParams }) {
     {sp.new && <p className={s.badge}>Welcome! Generate a recovery code below and save it. It is the only way to reset a forgotten password.</p>}
     {sp.reset && <p className={s.badge}>Password reset. Generate a new recovery code below.</p>}
     <h2>{me.ap} AP · {rankOf(me.ap)}</h2>
+    {me.character ? (() => { const c = charById(me.character); return <p>{c.emoji} <b>{c.name}</b> · <Link href={`/clan?id=${c.id}`}>{c.clan}</Link><br /><span className={s.mute}>{perkText(c.perk)} · Task: {TASKS[c.main][0]}</span></p>; })() : <p><Link href="/characters">⚔️ Choose your fighter</Link></p>}
     {nt ? <><div className={s.bar}><div style={{ width: `${Math.min(100, (me.ap / nt[1]) * 100)}%` }} /></div>
       <p className={s.mute}>{nt[1] - me.ap} AP to {nt[0]}</p></> : <p>Max rank reached 🎉</p>}
     <div className={s.streak}>🔥 {u.streak}-day streak</div>
