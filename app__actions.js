@@ -168,3 +168,22 @@ export async function setWatch(fd) {
   }
   revalidatePath('/watchlist'); revalidatePath('/anime'); revalidatePath('/profile');
 }
+
+export async function postComment(fd) {
+  const me = await getUser(); if (!me) redirect('/login');
+  const id = +fd.get('id'), body = String(fd.get('body') || '').trim().slice(0, 300);
+  if (!id || !body) return;
+  await sql`insert into comments(user_id, anime_id, body) values (${me.id}, ${id}, ${body})`;
+  const today = (await sql`select count(*)::int as n from comments where user_id = ${me.id} and created_at >= current_date`).rows[0].n;
+  if (today <= 3) await award(me.id, 2, null);
+  const total = (await sql`select count(*)::int as n from comments where user_id = ${me.id}`).rows[0].n;
+  if (total >= 10) await award(me.id, 0, 'Commentator');
+  revalidatePath('/anime'); revalidatePath('/profile');
+}
+export async function deleteComment(fd) {
+  const me = await getUser(); if (!me) redirect('/login');
+  const id = +fd.get('id');
+  if (isAdmin(me)) await sql`delete from comments where id = ${id}`;
+  else await sql`delete from comments where id = ${id} and user_id = ${me.id}`;
+  revalidatePath('/anime');
+}

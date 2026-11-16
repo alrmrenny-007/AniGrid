@@ -3,7 +3,8 @@ import { redirect } from 'next/navigation';
 import s from '../ui.module.css';
 import { sql } from '@/lib/db';
 import { getUser } from '@/lib/auth';
-import { setWatch } from '../actions';
+import { isAdmin } from '@/lib/game';
+import { setWatch, postComment, deleteComment } from '../actions';
 export const dynamic = 'force-dynamic';
 const ST = [['watching', 'Watching'], ['plan', 'Plan to watch'], ['completed', 'Completed'], ['dropped', 'Dropped']];
 export default async function Anime({ searchParams }) {
@@ -15,6 +16,7 @@ export default async function Anime({ searchParams }) {
   if (!a) return <p className={s.mute}>Couldn't load this anime right now. Try again in a moment.</p>;
   const me = await getUser();
   const mine = me ? (await sql`select status, rating from watchlist where user_id = ${me.id} and anime_id = ${n}`).rows[0] : null;
+  const { rows: comments } = await sql`select c.id, c.body, c.created_at, c.user_id, u.username from comments c join users u on u.id = c.user_id where c.anime_id = ${n} order by c.id desc limit 50`;
   const img = a.images.jpg.large_image_url || a.images.jpg.image_url;
   return (<>
     <div className={s.card}>
@@ -43,6 +45,23 @@ export default async function Anime({ searchParams }) {
           {ST.map(([v, l]) => <button key={v} className={s.opt} name="status" value={v}>{mine?.status === v ? '✓ ' : ''}{l}{v === 'completed' ? ' (+10 AP first time)' : ''}</button>)}
           {mine && <button className={s.opt} name="status" value="remove">Remove from list</button>}
         </form>)}
+    </div>
+    <div className={s.card}>
+      <h2>Comments ({comments.length})</h2>
+      {me ? (
+        <form action={postComment}>
+          <input type="hidden" name="id" value={n} />
+          <textarea className={s.field} name="body" placeholder="Share your thoughts… (+2 AP, first 3 a day)" maxLength={300} required />
+          <button className={s.btn}>Post</button>
+        </form>) : <p><Link href="/login">Log in</Link> to comment.</p>}
+      {comments.map((c) => (
+        <div key={c.id} style={{ margin: '.8rem 0', paddingTop: '.6rem', borderTop: '1px solid rgba(242,133,0,.2)' }}>
+          <Link href={`/u?name=${encodeURIComponent(c.username)}`}><b>{c.username}</b></Link>{' '}
+          <span className={s.mute}>{new Date(c.created_at).toLocaleDateString('en-US')}</span>
+          <p style={{ margin: '.3rem 0' }}>{c.body}</p>
+          {me && (me.id === c.user_id || isAdmin(me)) && (
+            <form action={deleteComment}><input type="hidden" name="id" value={c.id} /><button className={s.link}>Delete</button></form>)}
+        </div>))}
     </div>
   </>);
 }

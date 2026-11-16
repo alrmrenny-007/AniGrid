@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import s from '../ui.module.css';
 import { sql } from '@/lib/db';
 import { getUser } from '@/lib/auth';
@@ -14,7 +15,7 @@ export default async function Leaderboard() {
       {rows.map((u, i) => (
         <div key={u.id} className={`${s.lb} ${me?.id === u.id ? s.meRow : ''}`}>
           <span className={s.pos}>{medal[i] || i + 1}</span>
-          <span><b>{u.username}</b> <span className={s.mute}>{rankOf(u.ap)}</span></span>
+          <span><Link href={`/u?name=${encodeURIComponent(u.username)}`} style={{ color: 'inherit' }}><b>{u.username}</b></Link> <span className={s.mute}>{rankOf(u.ap)}</span></span>
           <span className={s.pts}>{u.ap} AP</span>
         </div>))}
     </div>
