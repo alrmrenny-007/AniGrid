@@ -60,7 +60,7 @@
 .bad{background:linear-gradient(120deg,#7a2a00,#c25a00)!important;animation:shake .45s}
 .mute{color:var(--mute);font-size:.9rem}
 .timer{float:right;font-weight:800;font-size:1.1rem;color:var(--blue);padding:.2rem .7rem;border-radius:999px;border:1px solid var(--blue);animation:pulse 1s ease-in-out infinite;box-shadow:none}
-@media(max-width:500px){.vs{grid-template-columns:1fr}h1{font-size:1.6rem}}
+@media(max-width:500px){.vs{grid-template-columns:1fr}.main h1{font-size:1.6rem}}
 
 .btn{background:linear-gradient(120deg,#F28500,#ffa94d,#F28500);background-size:200% 100%;color:#0a0a0a}
 .bar>div{background:linear-gradient(90deg,#228B22,#34b34a,#F28500,#228B22);background-size:200% 100%}
