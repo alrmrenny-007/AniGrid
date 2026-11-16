@@ -22,7 +22,7 @@ async function getStats() {
 async function getSeason() {
   try {
     const r = await fetch('https://api.jikan.moe/v4/seasons/now?limit=12', { next: { revalidate: 3600 } });
-    return (await r.json()).data.map((a) => ({ id: a.mal_id, title: a.title, img: a.images.jpg.large_image_url || a.images.jpg.image_url, score: a.score }));
+    return (await r.json()).data.map((a) => ({ id: a.mal_id, title: a.title, img: a.images.jpg.large_image_url || a.images.jpg.image_url, thumb: a.images.jpg.image_url, score: a.score }));
   } catch { return []; }
 }
 export default async function Home() {
@@ -53,7 +53,7 @@ export default async function Home() {
     <h2>Airing this season</h2>
     {season.length === 0 && <p className={s.mute}>Seasonal feed unavailable right now.</p>}
     <div className={s.grid}>{season.map((a) => (
-      <div key={a.id} className={s.card}><Link href={`/anime?id=${a.id}`} style={{ color: 'inherit', display: 'block' }}><img src={a.img} alt={a.title} /><b>{a.title}</b></Link><div className={s.mute}>★ {a.score ?? 'N/A'}</div></div>
+      <div key={a.id} className={s.card}><Link href={`/anime?id=${a.id}`} style={{ color: 'inherit', display: 'block' }}><img src={a.thumb} alt={a.title} loading="lazy" decoding="async" /><b>{a.title}</b></Link><div className={s.mute}>★ {a.score ?? 'N/A'}</div></div>
     ))}</div>
   </>);
 }
