@@ -17,6 +17,7 @@ export default async function Profile({ searchParams }) {
   const { rows: [u] } = await sql`select case when last_login >= current_date - 1 then streak else 0 end as streak, coalesce(last_login = current_date, false) as claimed from users where id = ${me.id}`;
   const c = me.character ? charById(me.character) : null;
   const nt = nextTier(me.ap);
+  const acct = (await sql`select email from users where id = ${me.id}`).rows[0];
   const imgs = c ? await charImages() : {};
   return (<>
     {sp.new && <p className={s.badge}>Welcome! Generate a recovery code below and save it. It is the only way to reset a forgotten password.</p>}
@@ -52,6 +53,12 @@ export default async function Profile({ searchParams }) {
     <div className={s.card}>
       <h2>Badges</h2>
       {b.length ? b.map((x) => <span key={x.badge} className={s.badge}>🏅 {x.badge}</span>) : <p className={s.mute}>None yet. Play quizzes and vote to earn some.</p>}
+    </div>
+    <div className={s.card}>
+      <h2>Connected account</h2>
+      {acct?.email ? <p>✅ Google: <b>{acct.email}</b> <span className={s.mute}>(verified)</span></p>
+        : process.env.GOOGLE_CLIENT_ID ? <><p className={s.mute}>Link Google to verify your email and sign in with one tap.</p><a href="/api/auth/google?link=1" className={s.btnGhost}>Link Google account</a></>
+        : <p className={s.mute}>Google sign-in is not set up yet.</p>}
     </div>
     <div className={s.card}>
       <h2>Security & alerts</h2>

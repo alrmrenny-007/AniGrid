@@ -18,6 +18,12 @@ export async function GET(req) {
   await sql`alter table users add column if not exists character text`;
   await sql`alter table users add column if not exists char_since timestamptz`;
   await sql`create table if not exists events(id serial primary key, user_id int, cat text, created_at timestamptz default now())`;
+  await sql`alter table users add column if not exists google_sub text`;
+  await sql`alter table users add column if not exists email text`;
+  await sql`alter table users add column if not exists email_verified boolean not null default false`;
+  await sql`create unique index if not exists users_google_sub on users(google_sub)`;
+  await sql`create table if not exists notifications(id serial primary key, user_id int, title text, body text, url text, is_read boolean not null default false, created_at timestamptz default now())`;
+  await sql`create index if not exists notif_user on notifications(user_id, id desc)`;
   await sql`create table if not exists badges(user_id int references users(id), badge text, primary key(user_id, badge))`;
   await sql`create table if not exists quizzes(id serial primary key, kind text, title text, question text, options jsonb, answer int, ap int, seconds int, badge text)`;
   await sql`create table if not exists quiz_attempts(user_id int, quiz_id int, primary key(user_id, quiz_id))`;

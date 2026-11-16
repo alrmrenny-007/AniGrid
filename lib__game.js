@@ -1,5 +1,6 @@
 import { sql } from './db';
 import { charById } from './chars';
+import { notifyUser } from './notify';
 export const TIERS = [['Genin', 0], ['Chunin', 100], ['Jonin', 300], ['Kage', 700]];
 export const isAdmin = (u) => !!u && !!process.env.ADMIN_USERNAME && u.username === process.env.ADMIN_USERNAME;
 export const rankOf = (ap) => [...TIERS].reverse().find((t) => ap >= t[1])[0];
@@ -11,6 +12,10 @@ export async function award(uid, ap, badge, cat) {
     if (b) ap += Math.max(1, Math.round(ap * b));
     await sql`insert into events(user_id, cat) values (${uid}, ${cat})`;
   }
-  await sql`update users set ap = ap + ${ap} where id = ${uid}`;
-  if (badge) await sql`insert into badges(user_id, badge) values (${uid}, ${badge}) on conflict do nothing`;
+  const up = (await sql`update users set ap = ap + ${ap} where id = ${uid} returning ap`).rows[0];
+  if (up && ap > 0 && rankOf(up.ap) !== rankOf(up.ap - ap)) await notifyUser(uid, { title: `🏆 Rank up: ${rankOf(up.ap)}!`, body: `You reached ${up.ap} AP.`, url: '/profile' });
+  if (badge) {
+    const b = await sql`insert into badges(user_id, badge) values (${uid}, ${badge}) on conflict do nothing returning badge`;
+    if (b.rows[0]) await notifyUser(uid, { title: `🏅 New badge: ${badge}`, body: 'Check your profile.', url: '/profile' });
+  }
 }

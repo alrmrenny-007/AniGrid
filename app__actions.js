@@ -1,7 +1,8 @@
 'use server';
 import bcrypt from 'bcryptjs';
 import { randomBytes } from 'crypto';
-import { notifyAll, vapid } from '@/lib/push';
+import { vapid } from '@/lib/push';
+import { broadcast } from '@/lib/notify';
 import { charById, TASKS } from '@/lib/chars';
 import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
@@ -135,7 +136,7 @@ export async function createQuiz(fd) {
   const ap = Math.min(500, Math.max(1, +fd.get('ap') || 15));
   const badge = txt(fd, 'badge', 40) || null;
   await sql`insert into quizzes(kind,title,question,options,answer,seconds,ap,badge) values (${kind},${kind === 'weekly' ? 'Weekly Contest' : 'Pop Quiz'},${q},${JSON.stringify(opts)}::jsonb,${idx},${secs},${ap},${badge})`;
-  if (kind === 'weekly') { try { await notifyAll({ title: '🏆 New weekly contest!', body: q, url: '/quiz' }); } catch {} }
+  if (kind === 'weekly') { try { await broadcast({ title: '🏆 New weekly contest!', body: q, url: '/quiz' }); } catch {} }
   revalidatePath('/quiz'); revalidatePath('/admin');
 }
 export async function deleteQuiz(fd) {
@@ -221,7 +222,7 @@ export async function createTournament(fd) {
   const t = (await sql`insert into tournaments(title) values (${title}) returning id`).rows[0];
   for (let i = 0; i < entries.length; i += 2)
     await sql`insert into matchups(round, slot, a, b, tournament_id) values (1, ${i / 2}, ${entries[i]}, ${entries[i + 1]}, ${t.id})`;
-  try { await notifyAll({ title: '🐐 New bracket is live!', body: title, url: '/arena' }); } catch {}
+  try { await broadcast({ title: '🐐 New bracket is live!', body: title, url: '/arena' }); } catch {}
   revalidatePath('/arena');
   redirect('/arena');
 }
@@ -294,7 +295,7 @@ export async function sendPush(fd) {
   const title = txt(fd, 'title', 60), body = txt(fd, 'body', 160), url = txt(fd, 'url', 100);
   if (!title) redirect('/admin?e=Add a title');
   let n = 0, bad = '';
-  try { n = await notifyAll({ title, body, url: url.startsWith('/') ? url : '/' }); } catch (err) { bad = String(err.message).slice(0, 80); }
+  try { n = await broadcast({ title, body, url: url.startsWith('/') ? url : '/' }); } catch (err) { bad = String(err.message).slice(0, 80); }
   if (bad) redirect('/admin?e=' + encodeURIComponent('Push failed: ' + bad));
   redirect('/admin?ok=' + encodeURIComponent(`Sent to ${n} device(s)`));
 }
@@ -321,4 +322,10 @@ export async function chooseCharacter(fd) {
 export async function skipPicker() {
   (await cookies()).delete('pickchar');
   revalidatePath('/', 'layout');
+}
+
+export async function markAllRead() {
+  const me = await getUser(); if (!me) return;
+  await sql`update notifications set is_read = true where user_id = ${me.id}`;
+  revalidatePath('/inbox'); revalidatePath('/', 'layout');
 }

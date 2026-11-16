@@ -23,3 +23,15 @@ export async function notifyAll(payload) {
   }));
   return rows.length;
 }
+
+export async function pushToUser(uid, payload) {
+  await vapid();
+  const { rows } = await sql`select endpoint, p256dh, auth from push_subs where user_id = ${uid}`;
+  await Promise.all(rows.map(async (r) => {
+    try {
+      await webpush.sendNotification({ endpoint: r.endpoint, keys: { p256dh: r.p256dh, auth: r.auth } }, JSON.stringify(payload));
+    } catch (e) {
+      if (e.statusCode === 404 || e.statusCode === 410) await sql`delete from push_subs where endpoint = ${r.endpoint}`;
+    }
+  }));
+}

@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import s from '../ui.module.css';
 import { sql } from '@/lib/db';
@@ -23,6 +24,7 @@ export default async function Admin({ searchParams }) {
   const { rows: news } = await sql`select id, tag, title from news order by id desc limit 20`;
   return (<>
     <h1>Admin Panel</h1>
+    <p><Link href="/admin/stats" className={s.btnGhost}>📊 Stats dashboard</Link></p>
     {e && <p className={s.err}>{e}</p>}
     {ok && <p className={s.badge}>{ok}</p>}
 

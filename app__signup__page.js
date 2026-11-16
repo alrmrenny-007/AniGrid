@@ -12,6 +12,7 @@ export default async function Signup({ searchParams }) {
     <form action={signup} className={`${s.card} ${s.authBox}`}>
       <h1>Create account</h1>
       {e && <p className={s.err}>{e}</p>}
+      {process.env.GOOGLE_CLIENT_ID && <><a href="/api/auth/google" className={s.btnGhost} style={{ textAlign: 'center' }}>Continue with Google</a><div className={s.or}>or use a username</div></>}
       <input className={s.field} name="username" placeholder="Username (3-24, letters/numbers)" maxLength={24} autoComplete="username" required />
       <input className={s.field} name="password" type="password" placeholder="Password (6+ characters)" autoComplete="new-password" required />
       <input className={s.field} name="confirm" type="password" placeholder="Confirm password" autoComplete="new-password" required />
