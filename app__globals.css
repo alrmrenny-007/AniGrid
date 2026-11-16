@@ -1,18 +1,15 @@
 @property --a{syntax:'<angle>';inherits:false;initial-value:0deg}
-:root{--ink:#f4f0e8;--mute:#9a978c;--pink:#F28500;--violet:#228B22;--blue:#34b34a}
+:root{--ink:#f4f0e8;--mute:#9b988d;--pink:#F28500;--violet:#228B22;--blue:#34b34a}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-html{scroll-behavior:smooth;background:#000}
-body{margin:0;color:var(--ink);font-family:var(--font-body),system-ui,sans-serif;min-height:100vh;overflow-x:hidden;line-height:1.5;
- background:#000;background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);background-size:44px 44px}
-body::before{content:'';position:fixed;inset:-10%;z-index:-3;pointer-events:none;
- background:radial-gradient(40% 35% at 10% 12%,rgba(34,139,34,.22),transparent 70%),radial-gradient(38% 32% at 92% 90%,rgba(242,133,0,.2),transparent 70%);}
-body::after{content:'';position:fixed;inset:0;z-index:-2;pointer-events:none;background:radial-gradient(ellipse at center,transparent 45%,#000 100%)}
+html{scroll-behavior:smooth;background:#070706}
+body{margin:0;color:var(--ink);font-family:var(--font-head),system-ui,sans-serif;min-height:100vh;overflow-x:hidden;line-height:1.55;background:#070706}
+body::before{content:'';position:fixed;inset:0;z-index:-1;pointer-events:none;background:radial-gradient(45% 35% at 8% 4%,rgba(34,139,34,.18),transparent 70%),radial-gradient(40% 32% at 95% 30%,rgba(242,133,0,.14),transparent 70%)}
 a{color:var(--blue);text-decoration:none}
-h1,h2,h3{font-family:var(--font-head),sans-serif;margin:.4em 0;line-height:1.15}
-h1{font-size:2rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;background:linear-gradient(90deg,#fff 30%,#F28500);-webkit-background-clip:text;background-clip:text;color:transparent}
-h2{font-size:1.05rem;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:#ffb866}
-h2::before{content:'';display:inline-block;width:4px;height:1em;background:#F28500;margin-right:.6rem;vertical-align:-.14em;box-shadow:0 0 10px #F28500}
-h3{font-weight:600;letter-spacing:.02em}
+h1,h2,h3,h4{margin:.4em 0;line-height:1.15;letter-spacing:-.01em}
+h1{font-size:2rem;font-weight:800;color:#fff}
+h2{font-size:1.5rem;font-weight:800;color:#fff}
+h3{font-weight:700}
+h4{font-family:var(--font-mono),monospace;font-size:.7rem;font-weight:500;letter-spacing:.2em;text-transform:uppercase;color:#F28500}
 input,button,textarea,select{font:inherit}
 ::selection{background:#F28500;color:#000}
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
