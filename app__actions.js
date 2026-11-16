@@ -97,3 +97,49 @@ export async function postDebate(fd) {
   if (body) await sql`insert into debate_posts(debate_id, user_id, side, body) values (${+fd.get('id')}, ${me.id}, ${fd.get('side')}, ${body})`;
   revalidatePath('/arena');
 }
+
+async function admin() { const me = await getUser(); if (!isAdmin(me)) redirect('/'); return me; }
+const txt = (fd, k, n = 200) => String(fd.get(k) || '').trim().slice(0, n);
+
+export async function createQuiz(fd) {
+  await admin();
+  const raw = [1, 2, 3, 4].map((i) => txt(fd, 'o' + i, 80));
+  const q = txt(fd, 'question', 200);
+  const right = raw[+fd.get('answer')];
+  const opts = raw.filter(Boolean);
+  const idx = opts.indexOf(right);
+  if (!q || opts.length < 2 || !right || idx < 0) return;
+  const kind = fd.get('kind') === 'weekly' ? 'weekly' : 'pop';
+  const secs = Math.min(120, Math.max(5, +fd.get('seconds') || 20));
+  const ap = Math.min(500, Math.max(1, +fd.get('ap') || 15));
+  const badge = txt(fd, 'badge', 40) || null;
+  await sql`insert into quizzes(kind,title,question,options,answer,seconds,ap,badge) values (${kind},${kind === 'weekly' ? 'Weekly Contest' : 'Pop Quiz'},${q},${JSON.stringify(opts)}::jsonb,${idx},${secs},${ap},${badge})`;
+  revalidatePath('/quiz'); revalidatePath('/admin');
+}
+export async function deleteQuiz(fd) {
+  await admin();
+  const id = +fd.get('id');
+  await sql`delete from quiz_attempts where quiz_id = ${id}`;
+  await sql`delete from quiz_starts where quiz_id = ${id}`;
+  await sql`delete from quizzes where id = ${id}`;
+  revalidatePath('/quiz'); revalidatePath('/admin');
+}
+export async function createNews(fd) {
+  await admin();
+  const title = txt(fd, 'title', 120);
+  if (!title) return;
+  await sql`insert into news(tag,title,body) values (${txt(fd, 'tag', 20) || 'News'},${title},${txt(fd, 'body', 300)})`;
+  revalidatePath('/'); revalidatePath('/admin');
+}
+export async function deleteNews(fd) {
+  await admin();
+  await sql`delete from news where id = ${+fd.get('id')}`;
+  revalidatePath('/'); revalidatePath('/admin');
+}
+export async function createDebate(fd) {
+  await admin();
+  const topic = txt(fd, 'topic', 120), a = txt(fd, 'a', 60), b = txt(fd, 'b', 60);
+  if (!topic || !a || !b) return;
+  await sql`insert into debates(topic,side_a,side_b) values (${topic},${a},${b})`;
+  revalidatePath('/arena');
+}

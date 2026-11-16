@@ -1,5 +1,7 @@
 import s from './ui.module.css';
 import Carousel from './Carousel';
+import { sql } from '@/lib/db';
+export const dynamic = 'force-dynamic';
 const HIGHLIGHTS = [
   ['Breaking', 'New season simulcast schedule announced', 'Streaming platforms reveal their full lineups for the new season.'],
   ['Movie', 'Studio announces sequel for a fan-favorite series', 'The story returns to theaters with the original cast.'],
@@ -7,10 +9,10 @@ const HIGHLIGHTS = [
   ['Event', 'GOAT Arena bracket is live', 'Vote for the greatest anime of all time and earn AP.'],
   ['Contest', 'Weekly contest is open', 'Beat the clock, win 100 AP and the Weekly Champion badge.'],
 ];
-const NEWS = [
-  ['Industry', 'Seasonal premieres roundup', 'Everything starting this season in one place.'],
-  ['Community', 'Top debates of the week', 'See which rivalries are dividing the Hub.'],
-];
+async function getNews() {
+  try { return (await sql`select tag, title, body from news order by id desc limit 10`).rows.map((r) => [r.tag, r.title, r.body || '']); }
+  catch { return []; }
+}
 async function getSeason() {
   try {
     const r = await fetch('https://api.jikan.moe/v4/seasons/now?limit=12', { next: { revalidate: 3600 } });
@@ -18,12 +20,13 @@ async function getSeason() {
   } catch { return []; }
 }
 export default async function Home() {
-  const season = await getSeason();
-  const slides = HIGHLIGHTS.map(([tag, title, desc], i) => ({ tag, title, desc, img: season[i]?.img }));
+  const [season, news] = await Promise.all([getSeason(), getNews()]);
+  const slides = [...news, ...HIGHLIGHTS].slice(0, 5).map(([tag, title, desc], i) => ({ tag, title, desc, img: season[i]?.img }));
+  const cards = news.length ? news : HIGHLIGHTS.slice(0, 3);
   return (<>
     <Carousel slides={slides} />
     <h1>Latest News</h1>
-    {NEWS.map(([tag, t, d]) => <div key={t} className={s.card}><span className={s.badge}>{tag}</span><h3>{t}</h3><p className={s.mute}>{d}</p></div>)}
+    {cards.map(([tag, t, d], i) => <div key={i} className={s.card}><span className={s.badge}>{tag}</span><h3>{t}</h3><p className={s.mute}>{d}</p></div>)}
     <h2>Airing This Season</h2>
     {season.length === 0 && <p className={s.mute}>Seasonal feed unavailable right now.</p>}
     <div className={s.grid}>{season.map((a) => (
