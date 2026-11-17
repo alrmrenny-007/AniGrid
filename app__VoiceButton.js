@@ -1,6 +1,11 @@
 'use client';
-import { playFx } from '@/lib/sfx';
+import { useState } from 'react';
+import EmoteBurst from './EmoteBurst';
 import s from './ui.module.css';
-export default function VoiceButton({ id }) {
-  return <button type="button" className={s.voice} onClick={() => playFx(id)} aria-label="Hear signature sound">🔊</button>;
+export default function VoiceButton({ id, img }) {
+  const [k, setK] = useState(0);
+  return (<>
+    <button type="button" className={s.voice} onClick={() => setK(k + 1)} aria-label="Play emote">💬</button>
+    <EmoteBurst id={id} k={k} img={img} />
+  </>);
 }

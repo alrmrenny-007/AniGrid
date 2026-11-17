@@ -46,7 +46,7 @@ export default async function Characters({ searchParams }) {
           <div className={s.fimg}>
             {imgs[c.id] ? <img src={imgs[c.id]} alt={c.name} loading="lazy" decoding="async" /> : <span>{c.emoji}</span>}
             <span className={s.chip}>{tierOf(c)}</span>
-            <VoiceButton id={c.id} />
+            <VoiceButton id={c.id} img={imgs[c.id]} />
             <div className={s.fname}>{c.name}</div>
           </div>
           <div className={s.fbody}>
