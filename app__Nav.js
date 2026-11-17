@@ -15,7 +15,7 @@ const I = {
   close: 'M6 6l12 12M18 6L6 18',
 };
 const Icon = ({ d }) => (<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d={d} /></svg>);
-const T = [['/', 'Home'], ['/browse', 'Catalog'], ['/quiz', 'Quizzes'], ['/arena', 'Arena'], ['/leaderboard', 'Ranks'], ['/characters', 'Clans']];
+const T = [['/', 'Home'], ['/browse', 'Catalog'], ['/quiz', 'Quizzes'], ['/arena', 'Arena'], ['/fight', 'Fight'], ['/leaderboard', 'Ranks'], ['/characters', 'Clans']];
 export default function Nav({ me, logout, admin, unread = 0 }) {
   const path = usePathname();
   const [open, setOpen] = useState(false);

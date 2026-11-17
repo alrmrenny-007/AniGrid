@@ -4,6 +4,7 @@ import { randomBytes } from 'crypto';
 import { vapid } from '@/lib/push';
 import { broadcast } from '@/lib/notify';
 import { charById, TASKS, CHARS } from '@/lib/chars';
+import { fightTables } from '@/lib/fightdb';
 import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
 import { revalidatePath } from 'next/cache';
@@ -357,4 +358,34 @@ export async function saveCharPic(id, dataUrl) {
 export async function dismissWelcome() {
   (await cookies()).delete('welcome');
   revalidatePath('/', 'layout');
+}
+
+const FAP = { easy: 5, normal: 10, hard: 20 };
+export async function startFight(fighter, opp, diff) {
+  const me = await getUser(); if (!me) return { error: 'Log in to play ranked' };
+  if (!charById(fighter) || !charById(opp) || !FAP[diff]) return { error: 'Bad setup' };
+  await fightTables();
+  const r = await sql`insert into fights(user_id, fighter, opp, diff) values (${me.id}, ${fighter}, ${opp}, ${diff}) returning id`;
+  return { id: r.rows[0].id };
+}
+export async function finishFight(id, won, frames) {
+  const me = await getUser(); if (!me) return { msg: 'Log in to earn points.' };
+  const f = (await sql`select * from fights where id = ${+id} and user_id = ${me.id} and not finished`).rows[0];
+  if (!f) return { msg: 'Match not found.' };
+  await sql`update fights set finished = true, won = ${!!won} where id = ${f.id}`;
+  if (!won) return { msg: 'You lost this one. Train and try again!' };
+  if (me.character !== f.fighter) return { msg: 'Nice win! Only your own clan fighter earns points.' };
+  const secs = (Date.now() - new Date(f.started_at).getTime()) / 1000;
+  if (secs < Math.max(20, (Number(frames) || 0) / 60 * 0.7)) return { msg: 'That match was too fast to count.' };
+  const today = (await sql`select count(*)::int as n from fights where user_id = ${me.id} and rewarded > 0 and started_at >= current_date`).rows[0].n;
+  if (today >= 10) return { msg: 'Daily reward limit reached (10 wins). Come back tomorrow!' };
+  const ap = FAP[f.diff];
+  await sql`update fights set rewarded = ${ap} where id = ${f.id}`;
+  await award(me.id, ap, null, 'fight');
+  await sql`insert into clan_scores(clan, points) values (${me.character}, ${ap}) on conflict (clan) do update set points = clan_scores.points + ${ap}`;
+  const wins = (await sql`select count(*)::int as n from fights where user_id = ${me.id} and rewarded > 0`).rows[0].n;
+  if (wins >= 1) await award(me.id, 0, 'First Blood');
+  if (wins >= 10) await award(me.id, 0, 'Warlord');
+  revalidatePath('/fight'); revalidatePath('/profile'); revalidatePath('/', 'layout');
+  return { ap, clan: charById(me.character).clan, msg: 'Great fight!' };
 }
