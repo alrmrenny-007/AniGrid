@@ -247,3 +247,20 @@
 .cryLine{margin:.3rem 0;font-weight:800;color:#F28500;animation:bub .35s both}
 .cryLine small{color:var(--mute);font-weight:600;margin-right:.4rem}
 .voice{position:absolute;z-index:3;top:.5rem;right:.5rem;width:36px;height:36px;border-radius:50%;border:1px solid rgba(255,255,255,.3);background:rgba(0,0,0,.6);color:#fff;cursor:pointer;font-size:1rem}
+
+/* versus screen */
+.mk{margin:0}
+.mkRow{position:relative;display:grid;grid-template-columns:1fr 1fr;overflow:hidden;border-radius:14px;border:2px solid #ffd27a;box-shadow:0 0 0 2px #000;background:#000}
+.mkSide{position:relative;min-height:150px;padding:1rem .6rem;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.7rem;text-align:center;border:0;color:#fff;font-family:inherit;cursor:pointer;transition:filter .2s,transform .15s}
+.mkA{background:linear-gradient(135deg,#5a1d00 0%,#F28500 75%,#ffb347 100%)}
+.mkB{background:linear-gradient(225deg,#082f0e 0%,#228B22 75%,#34b34a 100%)}
+.mkName{font-weight:900;font-size:clamp(.95rem,4.2vw,1.25rem);line-height:1.15;text-transform:uppercase;text-shadow:0 2px 8px rgba(0,0,0,.65);word-break:break-word}
+.mkTap{font-family:var(--font-mono),monospace;font-size:.65rem;letter-spacing:.25em;padding:.15rem .7rem;border:1px solid rgba(255,255,255,.55);border-radius:999px}
+.mkSide:active{transform:scale(.97);filter:brightness(1.35)}
+.mkVs{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:3;width:62px;height:62px;border-radius:50%;display:grid;place-items:center;font-weight:900;font-size:1.45rem;font-style:italic;color:#fff;background:radial-gradient(circle,#d01010 0%,#700 65%,#220 100%);border:3px solid #ffd27a;box-shadow:0 0 0 3px #000,0 0 24px rgba(255,90,0,.85);text-shadow:0 0 10px #ff9a3c,0 2px 0 #000;pointer-events:none}
+.hp{display:flex;height:12px;margin:.8rem 0 .35rem;border-radius:4px;overflow:hidden;border:2px solid #ffd27a;background:#000;box-shadow:0 0 0 2px #000}
+.hpA{background:linear-gradient(#ffcf5a,#F28500);transition:width .8s}
+.hpB{background:linear-gradient(#34b34a,#1c7a2a);transition:width .8s}
+.hpNums{display:flex;justify-content:space-between;align-items:center;font-size:.8rem;color:var(--mute)}
+.hpNums b{color:#fff;font-size:1rem}
+@media (hover:hover){.mkSide:hover{filter:brightness(1.15)}}

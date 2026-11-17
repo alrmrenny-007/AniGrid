@@ -4,12 +4,20 @@ import { getUser } from '@/lib/auth';
 import { isAdmin } from '@/lib/game';
 import { voteMatchup, advanceRound, finishTournament, voteDebate, postDebate } from '../actions';
 export const dynamic = 'force-dynamic';
-const Vote = ({ action, id, a, b }) => (
-  <form action={action} className={s.vs}>
-    <input type="hidden" name="id" value={id} />
-    <button className={s.btn} name="side" value="a">{a}</button><b>VS</b>
-    <button className={s.btn} name="side" value="b">{b}</button>
-  </form>);
+const Vote = ({ action, id, a, b, va = 0, vb = 0, locked }) => {
+  const tot = va + vb;
+  const pa = tot ? Math.round((va / tot) * 100) : 50;
+  const side = (k, name) => locked
+    ? <div className={`${s.mkSide} ${k === 'a' ? s.mkA : s.mkB}`}><span className={s.mkName}>{name}</span></div>
+    : <button className={`${s.mkSide} ${k === 'a' ? s.mkA : s.mkB}`} name="side" value={k}><span className={s.mkName}>{name}</span><span className={s.mkTap}>VOTE</span></button>;
+  return (
+    <form action={locked ? undefined : action} className={s.mk}>
+      <input type="hidden" name="id" value={id} />
+      <div className={s.mkRow}>{side('a', a)}<div className={s.mkVs}>VS</div>{side('b', b)}</div>
+      <div className={s.hp}><div className={s.hpA} style={{ width: pa + '%' }} /><div className={s.hpB} style={{ width: (100 - pa) + '%' }} /></div>
+      <div className={s.hpNums}><b>{va}</b><span>{tot} vote{tot === 1 ? '' : 's'}</span><b>{vb}</b></div>
+    </form>);
+};
 export default async function Arena() {
   const me = await getUser();
   const { rows: ts } = await sql`select * from tournaments order by id desc`;
@@ -26,8 +34,8 @@ export default async function Arena() {
     {t?.champion && <div className={s.card}><h2>🏆 Champion: {t.champion}</h2><p className={s.mute}>This bracket is finished. A new one is coming soon.</p></div>}
     {rounds.map((r) => (<div key={r}><h3>Round {r}</h3>
       {m.filter((x) => x.round === r).map((x) => (<div key={x.id} className={s.card}>
-        {t?.champion ? <div className={s.vs}><span>{x.a}</span><b>VS</b><span>{x.b}</span></div> : <Vote action={voteMatchup} id={x.id} a={x.a} b={x.b} />}
-        <p className={s.mute}>{x.votes_a} – {x.votes_b} (+5 AP per vote)</p></div>))}</div>))}
+        <Vote action={voteMatchup} id={x.id} a={x.a} b={x.b} va={x.votes_a} vb={x.votes_b} locked={!!t?.champion} />
+        <p className={s.mute} style={{ textAlign: 'center', margin: '.2rem 0 0' }}>{t?.champion ? 'Final result' : '+5 AP per vote'}</p></div>))}</div>))}
     {isAdmin(me) && t && !t.champion && top.length > 1 && (
       <form action={advanceRound}><input type="hidden" name="tid" value={t.id} /><button className={s.btn}>Close round & advance winners</button></form>)}
     {isAdmin(me) && t && !t.champion && top.length === 1 && rounds.length > 1 && (
@@ -37,8 +45,7 @@ export default async function Arena() {
     <h2>1v1 Debates</h2>
     {d.map((x) => (<div key={x.id} className={s.card}>
       <h3>{x.topic}</h3>
-      <Vote action={voteDebate} id={x.id} a={x.side_a} b={x.side_b} />
-      <p className={s.mute}>{x.votes_a} – {x.votes_b}</p>
+      <Vote action={voteDebate} id={x.id} a={x.side_a} b={x.side_b} va={x.votes_a} vb={x.votes_b} />
       <form action={postDebate}>
         <input type="hidden" name="id" value={x.id} />
         <textarea className={s.field} name="body" placeholder="Make your case…" maxLength={500} />
