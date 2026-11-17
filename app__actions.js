@@ -22,6 +22,7 @@ export async function signup(fd) {
   await award(rows[0].id, 10, 'Newcomer');
   await createSession(rows[0].id);
   (await cookies()).set('pickchar', '1', { path: '/', httpOnly: true, maxAge: 60 * 60 * 24 * 7 });
+  (await cookies()).set('welcome', 'new', { path: '/', httpOnly: true, maxAge: 600 });
   redirect('/profile?new=1');
 }
 export async function login(fd) {
@@ -30,6 +31,7 @@ export async function login(fd) {
   if (!rows[0] || !(await bcrypt.compare(p, rows[0].password_hash))) redirect('/login?e=Invalid credentials');
   if (rows[0].banned) redirect('/login?e=This account is suspended');
   await createSession(rows[0].id);
+  (await cookies()).set('welcome', 'back', { path: '/', httpOnly: true, maxAge: 600 });
   redirect('/profile');
 }
 export async function logout() { (await cookies()).delete('session'); redirect('/'); }
@@ -350,4 +352,9 @@ export async function saveCharPic(id, dataUrl) {
   await sql`insert into char_pics(id, mime, data) values (${id}, ${m[1]}, ${m[2]}) on conflict (id) do update set mime = excluded.mime, data = excluded.data, updated_at = now()`;
   revalidatePath('/characters'); revalidatePath('/clan'); revalidatePath('/profile'); revalidatePath('/', 'layout');
   return { ok: true };
+}
+
+export async function dismissWelcome() {
+  (await cookies()).delete('welcome');
+  revalidatePath('/', 'layout');
 }

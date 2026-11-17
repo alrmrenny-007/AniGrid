@@ -27,3 +27,21 @@ export const CHARS = [
   C('archivist', 'Kakashi Hatake', '📜', 'Ghost Archive', 400, { watch: 0.4, comment: 0.15 }, 'Copied a thousand episodes.'),
 ];
 export const charById = (id) => CHARS.find((c) => c.id === id);
+
+export const FX = {
+  ronin: { emote: '⚔️', cry: '三刀流', say: 'Santōryū', sfx: 'slash' },
+  kitsune: { emote: '🍥', cry: 'だってばよ!', say: 'Dattebayo', sfx: 'swirl' },
+  sakura: { emote: '🌸', cry: 'しゃーんなろー!', say: 'Shannarō', sfx: 'chime' },
+  monk: { emote: '💪', cry: '青春!', say: 'Seishun', sfx: 'zap' },
+  otaku: { emote: '⚙️', cry: '等価交換!', say: 'Tōka kōkan', sfx: 'alchemy' },
+  shinobi: { emote: '🌙', cry: '月読', say: 'Tsukuyomi', sfx: 'shadow' },
+  oracle: { emote: '👁️', cry: 'ギアス!', say: 'Geass', sfx: 'geass' },
+  scholar: { emote: '🧪', cry: '百億パーセント!', say: 'Hyaku-oku pāsento', sfx: 'bubble' },
+  bard: { emote: '🍓', cry: '万事屋銀ちゃん', say: 'Yorozuya Gin-chan', sfx: 'boing' },
+  samurai: { emote: '🗡️', cry: 'おろ?', say: 'Oro?', sfx: 'flute' },
+  emperor: { emote: '📓', cry: '新世界の神', say: 'Shin sekai no kami', sfx: 'stab' },
+  idol: { emote: '⭐', cry: 'アイドル!', say: 'Aidoru', sfx: 'idol' },
+  phoenix: { emote: '🔥', cry: '火拳!', say: 'Hiken', sfx: 'fire' },
+  oni: { emote: '👹', cry: '須佐能乎', say: 'Susanoo', sfx: 'gong' },
+  archivist: { emote: '⚡', cry: '千鳥!', say: 'Chidori', sfx: 'chirp' },
+};

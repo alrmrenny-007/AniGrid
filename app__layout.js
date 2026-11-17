@@ -5,19 +5,22 @@ import s from './ui.module.css';
 import Nav from './Nav';
 import SW from './SW';
 import CharPicker from './CharPicker';
+import Welcome from './Welcome';
 import { charImages } from '@/lib/charimg';
 import { getUser } from '@/lib/auth';
 import { isAdmin } from '@/lib/game';
 import { sql } from '@/lib/db';
 import { cookies } from 'next/headers';
-import { logout, chooseCharacter, skipPicker } from './actions';
+import { logout, chooseCharacter, skipPicker, dismissWelcome } from './actions';
 const head = Manrope({ subsets: ['latin'], variable: '--font-head' });
 const mono = JetBrains_Mono({ subsets: ['latin'], variable: '--font-mono' });
 export const metadata = { title: 'Senpai Hub', description: 'Anime community: news, quizzes, GOAT Arena', icons: { icon: '/icon-192.png', apple: '/icon-192.png' } };
 export const viewport = { themeColor: '#070706' };
 export default async function RootLayout({ children }) {
   const me = await getUser();
-  const show = !!me && !me.character && !!(await cookies()).get('pickchar');
+  const wk = me ? (await cookies()).get('welcome')?.value : null;
+  const showWelcome = !!me && (wk === 'new' || wk === 'back');
+  const show = !!me && !me.character && !!(await cookies()).get('pickchar') && !showWelcome;
   const counts = show ? (await sql`select character, count(*)::int as n from users where character is not null group by character`).rows : [];
   let unread = 0;
   if (me) { try { unread = (await sql`select count(*)::int as n from notifications where user_id = ${me.id} and not is_read`).rows[0].n; } catch {} }
@@ -25,6 +28,7 @@ export default async function RootLayout({ children }) {
   return (
     <html lang="en" className={`${head.variable} ${mono.variable}`}><body>
       <SW />
+      {showWelcome && <Welcome name={me.username} kind={wk} dismiss={dismissWelcome} />}
       {show && <CharPicker ap={me.ap} counts={counts} imgs={imgs} choose={chooseCharacter} skip={skipPicker} />}
       <Nav me={me ? { username: me.username, ap: me.ap } : null} logout={logout} admin={isAdmin(me)} unread={unread} />
       <main className={s.main}>{children}</main>

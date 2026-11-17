@@ -56,6 +56,7 @@ export async function GET(req) {
     await createSession(u.id);
     res = NextResponse.redirect(new URL(isNew ? '/profile?new=1' : '/profile', origin));
     if (isNew) res.cookies.set('pickchar', '1', { httpOnly: true, path: '/', maxAge: 604800 });
+    res.cookies.set('welcome', isNew ? 'new' : 'back', { httpOnly: true, path: '/', maxAge: 600 });
   }
   res.cookies.delete('g_state');
   res.cookies.delete('g_link');
