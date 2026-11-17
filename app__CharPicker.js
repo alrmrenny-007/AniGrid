@@ -8,9 +8,16 @@ export default function CharPicker({ ap, counts, imgs, choose, skip }) {
   const n = Object.fromEntries(counts.map((r) => [r.character, r.n]));
   const [id, setId] = useState(CHARS[0].id);
   const [im, setIm] = useState(imgs || {});
+  const [msg, setMsg] = useState('');
   useEffect(() => {
     if (CHARS.every((c) => im[c.id])) return;
-    loadCharImgs().then((m) => { if (Object.keys(m).length) { setIm((p) => ({ ...p, ...m })); saveCharImgs(m); } }).catch(() => {});
+    setMsg('Loading portraits…');
+    loadCharImgs()
+      .then(({ out, err }) => {
+        if (Object.keys(out).length) { setIm((p) => ({ ...p, ...out })); saveCharImgs(out); setMsg(''); }
+        else setMsg('Portraits could not load: ' + err + ' (v18)');
+      })
+      .catch((e) => setMsg('Portraits error: ' + String(e.message || e).slice(0, 90) + ' (v18)'));
   }, []);
   const c = CHARS.find((x) => x.id === id);
   const locked = (x) => x.cost > ap;
@@ -19,6 +26,7 @@ export default function CharPicker({ ap, counts, imgs, choose, skip }) {
       <div className={s.sheet}>
         <h1 style={{ fontSize: '1.6rem' }}>Choose your fighter</h1>
         <p className={s.mute}>Each fighter joins a clan and boosts the AP you earn. Switching later takes AP and a clan task.</p>
+        {msg && <p className={s.mute} style={{ fontSize: '.8rem' }}>{msg}</p>}
         <div className={s.roster}>
           {CHARS.map((x) => (
             <button key={x.id} type="button" onClick={() => setId(x.id)}

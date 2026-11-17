@@ -332,7 +332,7 @@ export async function markAllRead() {
 
 export async function saveCharImgs(map) {
   const me = await getUser(); if (!me) return;
-  const ok = /^https:\/\/s\d+\.anilist\.co\//;
+  const ok = /^https:\/\/(s\d+\.anilist\.co|cdn\.myanimelist\.net)\//;
   const cur = (await sql`select value from settings where key = 'charimgs'`).rows[0];
   const base = cur ? JSON.parse(cur.value) : {};
   for (const c of CHARS) { const u = map?.[c.id]; if (!base[c.id] && typeof u === 'string' && ok.test(u)) base[c.id] = u; }
