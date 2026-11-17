@@ -339,3 +339,15 @@ export async function saveCharImgs(map) {
   await sql`insert into settings(key, value) values ('charimgs', ${JSON.stringify(base)}) on conflict (key) do update set value = excluded.value`;
   revalidatePath('/characters'); revalidatePath('/clan'); revalidatePath('/profile');
 }
+
+export async function saveCharPic(id, dataUrl) {
+  const me = await getUser();
+  if (!isAdmin(me)) return { error: 'Admins only' };
+  if (!CHARS.some((c) => c.id === id)) return { error: 'Unknown fighter' };
+  const m = /^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/=]+)$/.exec(String(dataUrl || ''));
+  if (!m || m[2].length > 700000) return { error: 'Image invalid or too large' };
+  await sql`create table if not exists char_pics(id text primary key, mime text, data text, updated_at timestamptz default now())`;
+  await sql`insert into char_pics(id, mime, data) values (${id}, ${m[1]}, ${m[2]}) on conflict (id) do update set mime = excluded.mime, data = excluded.data, updated_at = now()`;
+  revalidatePath('/characters'); revalidatePath('/clan'); revalidatePath('/profile'); revalidatePath('/', 'layout');
+  return { ok: true };
+}

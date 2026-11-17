@@ -2,9 +2,12 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import s from '../ui.module.css';
 import { sql } from '@/lib/db';
+import { CHARS } from '@/lib/chars';
+import { charImages } from '@/lib/charimg';
+import PicUploader from '../PicUploader';
 import { getUser } from '@/lib/auth';
 import { isAdmin } from '@/lib/game';
-import { createQuiz, deleteQuiz, createNews, deleteNews, createDebate, createTournament, deleteComment, dismissReports, banUser, unbanUser, adminResetCode, sendPush } from '../actions';
+import { createQuiz, deleteQuiz, createNews, deleteNews, createDebate, createTournament, deleteComment, dismissReports, banUser, unbanUser, adminResetCode, sendPush, saveCharPic } from '../actions';
 import CodeForm from '../CodeForm';
 export const dynamic = 'force-dynamic';
 const Del = ({ action, id }) => (
@@ -21,6 +24,7 @@ export default async function Admin({ searchParams }) {
   const { rows: reports } = await sql`select c.id, c.body, u.username, count(r.reporter_id)::int as n from comment_reports r join comments c on c.id = r.comment_id join users u on u.id = c.user_id group by c.id, c.body, u.username order by n desc limit 30`;
   const { rows: banned } = await sql`select username from users where banned order by username`;
   const subs = (await sql`select count(*)::int as n from push_subs`).rows[0].n;
+  const pics = await charImages();
   const { rows: news } = await sql`select id, tag, title from news order by id desc limit 20`;
   return (<>
     <h1>Admin Panel</h1>
@@ -76,6 +80,12 @@ export default async function Admin({ searchParams }) {
       <h3>Banned ({banned.length})</h3>
       {banned.map((b) => <Row key={b.username}><span>{b.username}</span>
         <form action={unbanUser}><input type="hidden" name="username" value={b.username} /><button className={s.btn}>Unban</button></form></Row>)}
+    </div>
+
+    <div className={s.card}>
+      <h2>Fighter portraits</h2>
+      <p className={s.mute}>Tap Choose to pick a picture from your gallery for each fighter. Only use images you are allowed to use.</p>
+      <PicUploader chars={CHARS.map((c) => ({ id: c.id, name: c.name, emoji: c.emoji }))} imgs={pics} save={saveCharPic} />
     </div>
 
     <div className={s.card}>
