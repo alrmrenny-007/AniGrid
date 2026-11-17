@@ -3,6 +3,7 @@ import s from '../ui.module.css';
 import { sql } from '@/lib/db';
 import { charById, perkText, TASKS, tierOf } from '@/lib/chars';
 import { charImages } from '@/lib/charimg';
+import CharWarm from '../CharWarm';
 export const dynamic = 'force-dynamic';
 export default async function Clan({ searchParams }) {
   const { id } = await searchParams;
@@ -12,6 +13,7 @@ export default async function Clan({ searchParams }) {
   const members = (await sql`select username, ap from users where character = ${c.id} order by ap desc limit 50`).rows;
   const total = members.reduce((a, m) => a + m.ap, 0);
   return (<>
+    <CharWarm have={imgs} />
     <div className={s.card}>
       <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
         {imgs[c.id] ? <img src={imgs[c.id]} alt={c.name} className={s.fbig} /> : <span style={{ fontSize: '2.6rem' }}>{c.emoji}</span>}

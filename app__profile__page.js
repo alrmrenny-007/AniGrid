@@ -8,6 +8,7 @@ import { charById, perkText, TASKS } from '@/lib/chars';
 import { charImages } from '@/lib/charimg';
 import { claimDaily, generateRecovery, getPushKey, savePush } from '../actions';
 import CodeForm from '../CodeForm';
+import CharWarm from '../CharWarm';
 import PushButton from '../PushButton';
 export const dynamic = 'force-dynamic';
 export default async function Profile({ searchParams }) {
@@ -20,6 +21,7 @@ export default async function Profile({ searchParams }) {
   const acct = (await sql`select email from users where id = ${me.id}`).rows[0];
   const imgs = c ? await charImages() : {};
   return (<>
+    {c && <CharWarm have={imgs} />}
     {sp.new && <p className={s.badge}>Welcome! Generate a recovery code below and save it. It is the only way to reset a forgotten password.</p>}
     {sp.reset && <p className={s.badge}>Password reset. Generate a new recovery code below.</p>}
     <div className={s.pHero}>

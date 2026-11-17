@@ -5,6 +5,7 @@ import { getUser } from '@/lib/auth';
 import { CHARS, TASKS, perkText, tierOf, charById } from '@/lib/chars';
 import { charImages } from '@/lib/charimg';
 import { chooseCharacter } from '../actions';
+import CharWarm from '../CharWarm';
 export const dynamic = 'force-dynamic';
 export default async function Characters({ searchParams }) {
   const { e, ok } = await searchParams;
@@ -17,6 +18,7 @@ export default async function Characters({ searchParams }) {
   const [label, need] = cur ? TASKS[cur.main] : [];
   const ready = cur && done >= need;
   return (<>
+    <CharWarm have={imgs} />
     <h1>Fighters & Clans</h1>
     {e && <p className={s.err}>{e}</p>}
     {ok && <p className={s.badge}>{ok}</p>}

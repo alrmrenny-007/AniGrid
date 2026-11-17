@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import { randomBytes } from 'crypto';
 import { vapid } from '@/lib/push';
 import { broadcast } from '@/lib/notify';
-import { charById, TASKS } from '@/lib/chars';
+import { charById, TASKS, CHARS } from '@/lib/chars';
 import { redirect } from 'next/navigation';
 import { cookies } from 'next/headers';
 import { revalidatePath } from 'next/cache';
@@ -328,4 +328,14 @@ export async function markAllRead() {
   const me = await getUser(); if (!me) return;
   await sql`update notifications set is_read = true where user_id = ${me.id}`;
   revalidatePath('/inbox'); revalidatePath('/', 'layout');
+}
+
+export async function saveCharImgs(map) {
+  const me = await getUser(); if (!me) return;
+  const ok = /^https:\/\/s\d+\.anilist\.co\//;
+  const cur = (await sql`select value from settings where key = 'charimgs'`).rows[0];
+  const base = cur ? JSON.parse(cur.value) : {};
+  for (const c of CHARS) { const u = map?.[c.id]; if (!base[c.id] && typeof u === 'string' && ok.test(u)) base[c.id] = u; }
+  await sql`insert into settings(key, value) values ('charimgs', ${JSON.stringify(base)}) on conflict (key) do update set value = excluded.value`;
+  revalidatePath('/characters'); revalidatePath('/clan'); revalidatePath('/profile');
 }

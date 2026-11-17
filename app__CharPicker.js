@@ -1,10 +1,17 @@
 'use client';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { CHARS, TASKS, perkText, tierOf } from '@/lib/chars';
+import { loadCharImgs } from './CharWarm';
+import { saveCharImgs } from './actions';
 import s from './ui.module.css';
 export default function CharPicker({ ap, counts, imgs, choose, skip }) {
   const n = Object.fromEntries(counts.map((r) => [r.character, r.n]));
   const [id, setId] = useState(CHARS[0].id);
+  const [im, setIm] = useState(imgs || {});
+  useEffect(() => {
+    if (CHARS.every((c) => im[c.id])) return;
+    loadCharImgs().then((m) => { if (Object.keys(m).length) { setIm((p) => ({ ...p, ...m })); saveCharImgs(m); } }).catch(() => {});
+  }, []);
   const c = CHARS.find((x) => x.id === id);
   const locked = (x) => x.cost > ap;
   return (
@@ -16,13 +23,13 @@ export default function CharPicker({ ap, counts, imgs, choose, skip }) {
           {CHARS.map((x) => (
             <button key={x.id} type="button" onClick={() => setId(x.id)}
               className={`${s.fighter} ${id === x.id ? s.fighterSel : ''} ${locked(x) ? s.locked : ''}`}>
-              {imgs?.[x.id] ? <img className={s.fthumb} src={imgs[x.id]} alt="" /> : <b>{x.emoji}</b>}
+              {im[x.id] ? <img className={s.fthumb} src={im[x.id]} alt="" /> : <b>{x.emoji}</b>}
               {locked(x) ? '🔒 ' : ''}{x.name.split(' ')[0]}
             </button>))}
         </div>
         <div className={s.detail}>
           <div style={{ display: 'flex', gap: '.8rem', alignItems: 'center' }}>
-            {imgs?.[c.id] ? <img className={s.fbig} src={imgs[c.id]} alt={c.name} /> : <span style={{ fontSize: '2.4rem' }}>{c.emoji}</span>}
+            {im[c.id] ? <img className={s.fbig} src={im[c.id]} alt={c.name} /> : <span style={{ fontSize: '2.4rem' }}>{c.emoji}</span>}
             <div><h2 style={{ margin: 0, fontSize: '1.15rem' }}>{c.name}</h2><span className={s.badge}>{tierOf(c)}</span></div>
           </div>
           <p className={s.mute} style={{ margin: '.4rem 0' }}>{c.blurb}</p>
