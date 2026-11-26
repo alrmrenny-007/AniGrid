@@ -2,7 +2,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { CHARS, FX, charById, tierOf } from '@/lib/chars';
 import { createMatch, step, aiInput, W, H, DIFFS } from '@/lib/fight';
-import { draw } from '@/lib/fightdraw';
+import { makeArt, artStep, artTick, artDraw } from '@/lib/fightart';
+import { drawHud } from '@/lib/fighthud';
 import s from './ui.module.css';
 const cfg = (id) => { const c = charById(id); return { id, emote: FX[id].emote, tier: c.cost === 0 ? 0 : c.cost < 300 ? 1 : 2, cat: c.main }; };
 const KEYS = { ArrowLeft: 'left', a: 'left', A: 'left', ArrowRight: 'right', d: 'right', D: 'right', ArrowUp: 'jump', w: 'jump', W: 'jump', ' ': 'jump', j: 'punch', J: 'punch', k: 'kick', K: 'kick', l: 'block', L: 'block', Shift: 'block', u: 'special', U: 'special', i: 'special' };
@@ -49,23 +50,16 @@ export default function FightGame({ me, imgs, start, finish }) {
     m.names = [charById(mine).name, charById(opp).name];
     const im = {};
     for (const id of new Set([mine, opp])) if (imgs[id]) { const i = new Image(); i.src = imgs[id]; im[id] = i; }
-    const st = { banner: '', shake: 0, fx: [], last: performance.now(), acc: 0, raf: 0, ended: false };
+    const st = Object.assign(makeArt(), { last: performance.now(), acc: 0, raf: 0, ended: false });
     const loop = (now) => {
-      st.acc += Math.min(100, now - st.last); st.last = now;
+      st.acc += Math.min(100, now - st.last) * (m.phase === 'ko' ? 0.5 : 1); st.last = now;
       while (st.acc >= 1000 / 60) {
         st.acc -= 1000 / 60;
+        if (st.freeze > 0) { st.freeze--; artTick(st); continue; }
         step(m, inp.current, aiInput(m, 1));
-        for (const e of m.ev) {
-          if (e.t === 'hit') { st.fx.push({ x: e.x, y: e.y, life: 12, k: 'hit' }); st.shake = 5; }
-          else if (e.t === 'block') st.fx.push({ x: e.x, y: e.y, life: 8, k: 'block' });
-          else if (e.t === 'ko') st.banner = 'K.O.!';
-          else if (e.t === 'time') st.banner = 'TIME!';
-          else if (e.t === 'round') st.banner = '';
-          else if (e.t === 'over') st.banner = m.names[e.w] + ' WINS';
-        }
-        st.shake *= 0.85; st.fx.forEach((f) => f.life--); st.fx = st.fx.filter((f) => f.life > 0);
+        artStep(m, st);
       }
-      draw(ctx, m, im, st);
+      artDraw(ctx, m, im, st, drawHud);
       if (m.phase === 'over' && !st.ended) { st.ended = true; setTimeout(() => done(m), 1500); }
       st.raf = requestAnimationFrame(loop);
     };

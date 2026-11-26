@@ -1,4 +1,4 @@
-export const W = 360, H = 200, GROUND = 168, BODY = 34, MAXF = 3600;
+export const W = 360, H = 200, GROUND = 168, BODY = 42, MAXF = 3600;
 const ATK = {
   punch: { start: 4, active: 4, rec: 9, dmg: 6, range: 34, stun: 14, kb: 2.4, gain: 8 },
   kick: { start: 7, active: 5, rec: 14, dmg: 10, range: 44, stun: 20, kb: 4.2, gain: 12 },
